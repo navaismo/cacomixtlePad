@@ -24,6 +24,7 @@ The idea is to have a quick, responsive, and modern replacement for the LCD.
 
 ## Index
 
+- [Installation](#installation)
 - [Features](#features)
   - [Home Page](#home-page)
   - [Print Page](#print-page)
@@ -39,6 +40,16 @@ The idea is to have a quick, responsive, and modern replacement for the LCD.
 - [License](#license)
 
 ---
+
+## Installation
+> [!TIP]
+>
+> 1. Download the latest Release from [Release page](https://github.com/navaismo/cacomixtlePad/releases).
+> 2. Install the APK in your cellphone.
+> 3. Be sure that the Printer's Firmware uses the Baud Rate 115200, due to the Android limitation. 
+> 4. You can get the Printer's Firmware From: [Latest Release of Printer's Firmware without Gcode Preview](https://github.com/navaismo/Ender-3V3-SE) download the ZIP with 115Kbps string in it.
+> 5. Enjoy.
+>
 
 ## Features
 
