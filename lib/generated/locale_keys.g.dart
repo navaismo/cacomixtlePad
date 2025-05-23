@@ -1,0 +1,80 @@
+// DO NOT EDIT. This is code generated via package:easy_localization/generate.dart
+
+// ignore_for_file: constant_identifier_names
+
+abstract class  LocaleKeys {
+  static const Home = 'Home';
+  static const Print = 'Print';
+  static const Prepare = 'Prepare';
+  static const Settings = 'Settings';
+  static const Connect = 'Connect';
+  static const Connected = 'Connected';
+  static const Select_Material = 'Select_Material';
+  static const Set = 'Set';
+  static const Temp = 'Temp';
+  static const Enter_temperature = 'Enter_temperature';
+  static const OK = 'OK';
+  static const Cancel = 'Cancel';
+  static const Hotend = 'Hotend';
+  static const Bed = 'Bed';
+  static const Preheat = 'Preheat';
+  static const Cooldown = 'Cooldown';
+  static const Permission_denied = 'Permission_denied';
+  static const Error_loading_Gcode_files = 'Error_loading_Gcode_files';
+  static const Path_not_found = 'Path_not_found';
+  static const Only_gcode_files_are_allowed = 'Only_gcode_files_are_allowed';
+  static const Error_getting_local_IP = 'Error_getting_local_IP';
+  static const Connect_to_the_Printer = 'Connect_to_the_Printer';
+  static const Upload_G_code = 'Upload_G_code';
+  static const Select_a_Gcode_file_to_print = 'Select_a_Gcode_file_to_print';
+  static const Error = 'Error';
+  static const Please_connect_to_a_port_first = 'Please_connect_to_a_port_first';
+  static const Layers = 'Layers';
+  static const Time = 'Time';
+  static const Print_Finished = 'Print_Finished';
+  static const Cancel_Print = 'Cancel_Print';
+  static const Set_Fan_Speed = 'Set_Fan_Speed';
+  static const Enter_fan_speed = 'Enter_fan_speed';
+  static const Set_Z_Offset = 'Set_Z_Offset';
+  static const Enter_Z_offset = 'Enter_Z_offset';
+  static const ex_string = 'ex_string';
+  static const Status_Paused = 'Status_Paused';
+  static const Status_Printing = 'Status_Printing';
+  static const Status_Idle = 'Status_Idle';
+  static const Start = 'Start';
+  static const Resume = 'Resume';
+  static const Pause = 'Pause';
+  static const Stop = 'Stop';
+  static const Fan = 'Fan';
+  static const Disable_All_Motors = 'Disable_All_Motors';
+  static const disable_motors = 'disable_motors';
+  static const Yes = 'Yes';
+  static const Z_Offset = 'Z_Offset';
+  static const Extrude = 'Extrude';
+  static const Retract = 'Retract';
+  static const Disable_Motors = 'Disable_Motors';
+  static const Enter_value = 'Enter_value';
+  static const Custom = 'Custom';
+  static const Extrude_Retract_Length = 'Extrude_Retract_Length';
+  static const Length = 'Length';
+  static const Language = 'Language';
+  static const USB_is_not_connected = 'USB_is_not_connected';
+  static const App_settings_saved = 'App_settings_saved';
+  static const Change_Language = 'Change_Language';
+  static const Printer_Info = 'Printer_Info';
+  static const Printer_Statistics = 'Printer_Statistics';
+  static const Edit_Material_Values = 'Edit_Material_Values';
+  static const Save_Printer_Settings = 'Save_Printer_Settings';
+  static const Save_App_Settings = 'Save_App_Settings';
+  static const Bed_Level = 'Bed_Level';
+  static const Save = 'Save';
+  static const Material_values_saved = 'Material_values_saved';
+  static const Settings_saved = 'Settings_saved';
+  static const New_BL = 'New_BL';
+  static const BL_failed = 'BL_failed';
+  static const Bed_Level_Visualizer = 'Bed_Level_Visualizer';
+  static const Get_Grid = 'Get_Grid';
+  static const Start_New_Level = 'Start_New_Level';
+  static const About = 'About';
+
+}
