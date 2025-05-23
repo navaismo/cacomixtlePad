@@ -103,10 +103,13 @@ The idea is to have a quick, responsive, and modern replacement for the LCD.
 
 >- [x] Setup Z Offset  
   <div align="center"><img src="./extras/zoffset.jpg" height="300" width="700"></div>
+
 >- [x] Extrude & Retract material  
   <div align="center"><img src="./extras/extandret.jpg" height="300" width="700"></div>
+
 >- [x] Disable Motors  
   <div align="center"><img src="./extras/motor.jpg" height="300" width="700"></div>
+
 >- [x] View or start a new Bed Level  
   <div align="center"><img src="./extras/bedlevel.jpg" height="300" width="700"></div>
 
