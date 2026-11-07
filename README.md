@@ -16,7 +16,14 @@ I built it as a quick, responsive, and modern replacement for the LCD.
 
 <br>
 
-![demo](./extras/demo_fast.gif)
+<details>
+<summary>Earlier phone demo</summary>
+
+This recording shows the earlier interface. You can see the current screens below.
+
+![Earlier phone demo](./extras/demo_fast.gif)
+
+</details>
 
 <br>
 
@@ -30,7 +37,9 @@ I built it as a quick, responsive, and modern replacement for the LCD.
   - [Print Page](#print-page)
   - [Printing Page](#printing-page)
   - [Prepare Page](#prepare-page)
+  - [Bed Mesh](#bed-mesh)
   - [Settings Page](#settings-page)
+  - [Small Screens and Forms](#small-screens-and-forms)
 - [Connection](#connection)
 - [Postman/Bruno Upload](#postmanbruno-upload)
 - [OrcaSlicer Setup](#orcaslicer-setup)
@@ -53,91 +62,161 @@ I built it as a quick, responsive, and modern replacement for the LCD.
 
 ## Features
 
+We refreshed the layout so you can reach the controls on smaller screens, keep
+forms above the keyboard, and return to an active print from any screen. The
+G-code thumbnail stays loaded while progress and temperatures update.
+
+These screenshots come from our current Flutter screens with simulated printer
+state, example files, and example network addresses. We did not connect a printer
+to capture them. You can reproduce them with the [screenshot tool](docs/SCREENSHOTS.md).
+
 ### Home Page
 
 <div align="center">
-  <img src="./extras/home.jpg" height="300" width="700">
+  <img src="./extras/screenshots/home.png" alt="Home with temperature controls and enlarged XYZ movement controls" width="900">
 </div>
 
->- [x] XYZ Movement Controller
->- [x] Set & See Hotend Temperature
->- [x] Set & See Bed Temperature
->- [x] Cooling Bed & Hotend with one click
->- [x] Preheat shortcuts for PLA, PETG, TPU & ABS Materials
->- [x] Information for the API URL
->- [x] Information for the Slicer URL
+> - [x] Move XYZ and home the printer
+> - [x] Set and read hotend and bed temperatures
+> - [x] Cool down the bed and hotend with one click
+> - [x] Preheat shortcuts for PLA, PETG, TPU, and ABS
+> - [x] Find your API and slicer URLs
+> - [x] View and copy your upload API key
 
 <br>
 
 ### Print Page
 
 <div align="center">
-  <img src="./extras/printpage.jpg" height="300" width="700">
+  <img src="./extras/screenshots/library.png" alt="G-code library with example cube thumbnails, layer counts, and time estimates" width="900">
 </div>
 
->- [x] Preview of the Gcode Files
->- [x] Layer information
->- [x] Time information
->- [x] Select a local file from phone to print
->- [x] Delete File
->- [x] Upload files from PostMan
->- [x] Upload files from OrcaSlicer or Cura
+> - [x] Preview your G-code files, layer counts, and time estimates
+> - [x] Select a local file from your phone
+> - [x] Delete files when no print is active
+> - [x] Upload from Postman, Bruno, OrcaSlicer, or Cura
 
 <br>
 
 ### Printing Page
 
 <div align="center">
-  <img src="./extras/printjob.jpg" height="300" width="700">
+  <img src="./extras/screenshots/printing.png" alt="Active print at 42 percent with a stable thumbnail and temperature, fan, and job controls" width="900">
 </div>
 
->- [x] Preview of the File
->- [x] Progress of the job
->- [x] Status of the job
->- [x] Control for Hotend Temperature
->- [x] Control for Bed Temperature
->- [x] Control for Fan Speed
->- [x] Layer Progress
->- [x] Time Progress
->- [x] Control for Z offset
->- [x] Start Button
->- [x] Pause/Resume Button
->- [x] Cancel Button
+> - [x] Follow progress, status, layers, and time
+> - [x] Adjust hotend temperature, bed temperature, fan speed, and Z offset
+> - [x] Pause with a verified lift and rear parking when firmware checks pass
+> - [x] Resume by returning to the saved position before the next file line
+> - [x] Cancel with cooldown and checked parking
+> - [x] Return to the job through the global **Active print** button
+
+You can leave this page while printing. When parking finishes, **Resume** becomes
+available; Z offset changes stay disabled throughout pause and return.
+
+<details>
+<summary>Paused print and the global Active print button</summary>
+
+<div align="center">
+  <img src="./extras/screenshots/paused.png" alt="Paused print with Resume available and Z offset disabled" width="900">
+  <img src="./extras/screenshots/active-print.png" alt="Active print button above the Prepare page and navigation" width="900">
+</div>
+
+</details>
 
 <br>
 
 ### Prepare Page
 
 <div align="center">
-  <img src="./extras/preparepage.jpg" height="300" width="700">
+  <img src="./extras/screenshots/prepare.png" alt="Preparation controls for Z offset, extrusion, motors, and bed leveling" width="900">
 </div>
 
->- [x] Setup Z Offset  
-  <div align="center"><img src="./extras/zoffset.jpg" height="300" width="700"></div>
+> - [x] Set the global probe Z offset
+> - [x] Extrude and retract material
+> - [x] Confirm before disabling motors
+> - [x] Open the bed mesh or start a new leveling pass
 
->- [x] Extrude & Retract material  
-  <div align="center"><img src="./extras/extandret.jpg" height="300" width="700"></div>
+<details>
+<summary>Z offset, extrusion, and motor controls</summary>
 
->- [x] Disable Motors  
-  <div align="center"><img src="./extras/motor.jpg" height="300" width="700"></div>
+<div align="center">
+  <img src="./extras/screenshots/z-offset-form.png" alt="Numeric Z offset form with an example value of minus 1.45" width="900">
+  <img src="./extras/screenshots/extrusion.png" alt="Extrusion controls with temperature and length presets beside XYZ movement" width="900">
+  <img src="./extras/screenshots/motors-dialog.png" alt="Confirmation dialog before disabling stepper motors" width="900">
+</div>
 
->- [x] View or start a new Bed Level  
-  <div align="center"><img src="./extras/bedlevel.jpg" height="300" width="700"></div>
+</details>
+
+<br>
+
+### Bed Mesh
+
+<div align="center">
+  <img src="./extras/screenshots/mesh-height-map.png" alt="Selectable 4 by 4 height map with a zero-centered legend and point statistics below the controls" width="900">
+</div>
+
+> - [x] Select a point to inspect its reported height
+> - [x] Switch between the height map and 3D surface
+> - [x] Read the minimum, maximum, and range beneath the mesh controls
+> - [x] Refresh the mesh or run a new leveling pass
+> - [x] Keep the previous mesh visible if a refresh fails
+
+The point labels are mesh indices, not XY distances. Selecting a point currently
+shows its height; moving the nozzle to a point and adjusting it in 0.01 mm steps
+remain [planned calibration work](docs/MESH_POINT_CALIBRATION_REVIEW.md).
+
+<details>
+<summary>3D surface view</summary>
+
+<div align="center">
+  <img src="./extras/screenshots/mesh-surface.png" alt="3D bed surface with the same height legend and selected-point statistics" width="900">
+</div>
+
+</details>
 
 <br>
 
 ### Settings Page
 
 <div align="center">
-  <img src="./extras/settings.jpg" height="300" width="700">
+  <img src="./extras/screenshots/settings.png" alt="Settings for languages, firmware information, statistics, material presets, and saved configuration" width="900">
 </div>
 
->- [x] Change App Language
->- [x] Get Printer's Firmware information
->- [x] Get Printer's Statistics
->- [x] Edit Preheat temperatures for materials
->- [x] Save Printer's configuration
->- [x] About the android application
+> - [x] Choose from seven app languages
+> - [x] Read firmware information and printer statistics
+> - [x] Edit preheat temperatures for each material
+> - [x] Save the printer configuration
+> - [x] Read app information
+
+<details>
+<summary>Material presets</summary>
+
+<div align="center">
+  <img src="./extras/screenshots/materials.png" alt="PLA, PETG, TPU, and ABS temperature forms with a separate Save button" width="900">
+</div>
+
+</details>
+
+<br>
+
+### Small Screens and Forms
+
+Controls wrap and pages scroll as space gets tighter. Numeric forms switch to a
+compact row when the keyboard leaves little height, and material fields stack
+on narrow screens. You can still reach Save and confirmation buttons.
+
+<div align="center">
+  <img src="./extras/screenshots/temperature-form.png" alt="Temperature form with a numeric field and separate Cancel and OK buttons" width="900">
+</div>
+
+The compact example below uses a 568 × 320 viewport with 180 pixels reserved for
+the keyboard. The dark lower area represents that reserved space; Android's
+keyboard itself is not rendered by the screenshot tool.
+
+<div align="center">
+  <img src="./extras/screenshots/compact-form.png" alt="Compact Z offset form staying above simulated keyboard space" width="700">
+</div>
 
 ---
 

@@ -2,7 +2,8 @@
 
 We started this memory on 2026-11-07 at `9f7a9e1` and updated it with two rounds
 of fixes that day. The fixes, security review, and responsive UI work are now
-committed in `a05dc87`. Our later printing and mesh changes are local.
+committed in `a05dc87`. Later printing, mesh, and version changes were also
+committed before our screenshot refresh, which started at `807adee`.
 The [initial analysis](docs/REPO_ANALYSIS.md) is historical; the current status
 and validation of the fixes are in the reports for the
 [first round](docs/FIXES_2026-11-07.md) and
@@ -10,7 +11,7 @@ and validation of the fixes are in the reports for the
 
 ## Product and agreed scope
 
-Our Flutter Android app, version `1.1.0`, replaces LCD functions on an Ender
+Our Flutter Android app, version `1.1.1`, replaces LCD functions on an Ender
 3 V3 SE through USB OTG and G-code at 115200 baud. The README describes
 compatibility with other Marlin 2 printers as a possibility; we have not
 verified it in this session. The interface uses landscape orientation, a dark
@@ -92,6 +93,8 @@ python3 tool/check_translations.py
 # In a checkout without android/key.properties:
 python3 tool/validate_release_signing.py
 git diff --check
+# Refresh README screenshots with simulated data (no phone or printer):
+flutter test --no-pub test/support/capture_screenshots.dart --reporter expanded
 ```
 
 Flutter needs to write the SDK lockfile outside the repository; this sandbox
@@ -193,6 +196,24 @@ We inspected rendered 4 × 4 mesh previews.
 See [PRINTING_AND_MESH.md](docs/PRINTING_AND_MESH.md) for firmware references and
 pending hardware checks. `M114` is a logical report, not a physical position
 sensor: do not move the head or release motors during a pause.
+
+## README screenshots
+
+We added 15 current UI captures under `extras/screenshots/` and replaced the
+older app images in the README. The earlier phone GIF stays available in a
+clearly labeled expandable section; slicer and connection illustrations remain.
+The README keeps its English, direct personal voice and describes the current
+mesh, pause/resume, global print button, and responsive forms. Point calibration
+is still labeled as planned work.
+
+You can reproduce the images with
+`flutter test --no-pub test/support/capture_screenshots.dart --reporter expanded`.
+The opt-in fixture renders real page widgets with simulated state and synthetic
+G-code thumbnails; it opens no USB ports or upload-server sockets. It reads the
+version from `pubspec.yaml` and loads Roboto from installed Android SDK fonts.
+The compact form simulates keyboard insets without drawing an Android keyboard.
+See [SCREENSHOTS.md](docs/SCREENSHOTS.md) for setup and capture details. These
+renders do not establish phone, IME, or physical printer behavior.
 
 ## Outstanding work
 
