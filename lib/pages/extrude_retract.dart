@@ -3,12 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:CacomixtlePad/services/usbConn_svc.dart';
+import 'package:CacomixtlePad/services/usb_connection_service.dart';
 import 'package:CacomixtlePad/services/temp_svc.dart';
+import '../widgets/movement_controls.dart';
+import '../widgets/number_input_dialog.dart';
+import '../widgets/responsive_layout.dart';
 
 class ExtrudeRetractPage extends StatefulWidget {
+  const ExtrudeRetractPage({super.key});
+
   @override
-  _ExtrudeRetractPageState createState() => _ExtrudeRetractPageState();
+  State<ExtrudeRetractPage> createState() => _ExtrudeRetractPageState();
 }
 
 class _ExtrudeRetractPageState extends State<ExtrudeRetractPage> {
@@ -36,6 +41,8 @@ class _ExtrudeRetractPageState extends State<ExtrudeRetractPage> {
     _tempPollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       setState(() {
         _currentTemperature = double.tryParse(tempSvc.hotendTemp) ?? 0.0;
+        _isHeating = _targetTemperature > 0 &&
+            _currentTemperature < _targetTemperature - 2;
       });
     });
   }
@@ -49,426 +56,125 @@ class _ExtrudeRetractPageState extends State<ExtrudeRetractPage> {
     });
     usbService.sendGCode('M104 S$temperature', context);
     usbService.sendGCode('M140 S60', context); // Set bed temperature to 60°C
-    // Simulate warming
-    Future.delayed(Duration(seconds: 5), () {
-      setState(() {
-        _currentTemperature = double.parse(tempSvc.hotendTemp);
-        _isHeating = false;
-      });
-    });
   }
 
   void _executeExtrudeRetract(
       UsbConnectionService usbService, BuildContext context) {
     String command =
-        'G1 E${_isExtrude ? _extrudeAmount : -_extrudeAmount} F200';
+        'M83\nG1 E${_isExtrude ? _extrudeAmount : -_extrudeAmount} F200';
+    if (_extrudeAmount <= 0 || _isHeating || _currentTemperature < 170) return;
     usbService.sendGCode(command, context);
   }
 
-  void _showCustomInputDialog(
-      BuildContext context, String title, Function(double) onConfirm) {
-    final TextEditingController controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: controller,
-            keyboardType:
-                TextInputType.numberWithOptions(decimal: true, signed: false),
-            decoration: InputDecoration(hintText: 'Enter_value'.tr()),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel'.tr()),
-            ),
-            TextButton(
-              onPressed: () {
-                final value = double.tryParse(controller.text);
-                if (value != null) {
-                  onConfirm(value);
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text('OK'.tr()),
-            ),
-          ],
-        );
-      },
-    );
+  Future<void> _showCustomInputDialog(BuildContext context, String title,
+      void Function(double) onConfirm) async {
+    final value = await showNumberInputDialog(context,
+        title: title, hint: 'Enter_value'.tr(), maximum: 300);
+    if (value != null && context.mounted) onConfirm(value);
   }
 
-  Widget _buildTemperatureControls(UsbConnectionService usbService,
-      BuildContext context, TemperatureService tempSvc, double fontSize) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Hotend'.tr() + ' ' + 'Temp'.tr() + ': $_currentTemperature°C',
-          style: TextStyle(fontSize: fontSize - 5, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          children: [200, 240, 270].map((temp) {
-            final isSelected = _targetTemperature == temp.toDouble();
-            return Card(
-              color: isSelected ? Colors.blue : const Color.fromARGB(255, 72, 79, 93),
-              elevation: isSelected ? 8 : 2,
-              shape: RoundedRectangleBorder(
-                side: isSelected
-                    ? BorderSide(color: const Color.fromARGB(255, 226, 223, 230), width: 2)
-                    : BorderSide.none,
-                borderRadius: BorderRadius.circular(8),
+  Widget _buildTemperatureControls(UsbConnectionService usb,
+          BuildContext context, TemperatureService temperature) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${'Hotend'.tr()} ${'Temp'.tr()}: $_currentTemperature°C',
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final value in [200, 240, 270])
+              ChoiceChip(
+                label: Text('$value°C'),
+                selected: _targetTemperature == value.toDouble(),
+                onSelected: (_) => _setTemperature(
+                    usb, context, value.toDouble(), temperature),
               ),
-              child: InkWell(
-                onTap: () => _setTemperature(
-                    usbService, context, temp.toDouble(), tempSvc),
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    '$temp°C',
-                    style: TextStyle(
-                      fontSize: fontSize - 5,
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList()
-            ..add(
-              Card(
-                color: false ? Colors.blue : const Color.fromARGB(255, 72, 79, 93), // Custom never selected
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: InkWell(
-                  onTap: () =>
-                      _showCustomInputDialog(context, 'Temp'.tr(), (value) {
-                    _setTemperature(usbService, context, value, tempSvc);
-                  }),
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Custom'.tr(),
-                      style: TextStyle(
-                        fontSize: fontSize - 5,
-                        color: Colors.black,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            ActionChip(
+                label: Text('Custom'.tr()),
+                onPressed: () => _showCustomInputDialog(
+                    context,
+                    'Temp'.tr(),
+                    (value) =>
+                        _setTemperature(usb, context, value, temperature))),
+          ]),
+          if (_isHeating)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: SizedBox.square(
+                  dimension: 24, child: CircularProgressIndicator()),
             ),
-        ),
-        SizedBox(height: 10),
-        if (_isHeating) CircularProgressIndicator(),
-      ],
-    );
-  }
+        ],
+      );
 
   Widget _buildExtrudeRetractControls(
-      UsbConnectionService usbService, BuildContext context, double fontSize) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Extrude_Retract_Length'.tr(),
-            style: TextStyle(fontSize: fontSize - 5, fontWeight: FontWeight.bold)),
-        SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          children: [30, 50, 70].map((length) {
-            final isSelected = _extrudeAmount == length.toDouble();
-            return Card(
-              color: isSelected ? Colors.blue : const Color.fromARGB(255, 72, 79, 93),
-              elevation: isSelected ? 8 : 2,
-              shape: RoundedRectangleBorder(
-                side: isSelected
-                    ? BorderSide(color: const Color.fromARGB(255, 233, 232, 236), width: 2)
-                    : BorderSide.none,
-                borderRadius: BorderRadius.circular(8),
+          UsbConnectionService usb, BuildContext context) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Extrude_Retract_Length'.tr(),
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final length in [30, 50, 70])
+              ChoiceChip(
+                label: Text('${length}mm'),
+                selected: _extrudeAmount == length.toDouble(),
+                onSelected: (_) =>
+                    setState(() => _extrudeAmount = length.toDouble()),
               ),
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _extrudeAmount = length.toDouble();
-                  });
-                },
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    '${length}mm',
-                    style: TextStyle(
-                      fontSize: fontSize - 5,
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList()
-            ..add(
-              Card(
-                color: false ? Colors.blue : const Color.fromARGB(255, 72, 79, 93), // Custom never selected
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: InkWell(
-                  onTap: () =>
-                      _showCustomInputDialog(context, 'Length'.tr(), (value) {
-                    setState(() {
-                      _extrudeAmount = value;
-                    });
-                  }),
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Custom'.tr(),
-                      style: TextStyle(
-                        fontSize: fontSize - 5,
-                        color: Colors.black,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ),
-        SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          children: [
-            Card(
-              color: _isExtrude ? Colors.blue : Colors.white,
-              elevation: _isExtrude ? 6 : 2,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _isExtrude = true;
-                  });
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: _isExtrude ? 20 : 12, // Bigger if selected
-                    horizontal: _isExtrude ? 32 : 12, // Bigger if selected
-                  ),
-                  child: Text(
-                    'Extrude'.tr(),
-                    style: TextStyle(
-                      fontSize: fontSize - 3, // Slightly bigger font if selected
-                      color: _isExtrude ? Colors.white : Colors.black,
-                      fontWeight: _isExtrude ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Card(
-              color: !_isExtrude ? Colors.blue : Colors.white,
-              elevation: !_isExtrude ? 6 : 2,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _isExtrude = false;
-                  });
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: !_isExtrude ? 20 : 12, // Bigger if selected
-                    horizontal: !_isExtrude ? 32 : 12, // Bigger if selected
-                  ),
-                  child: Text(
-                    'Retract'.tr(),
-                    style: TextStyle(
-                      fontSize: fontSize - 3, // Slightly bigger font if selected
-                      color: !_isExtrude ? Colors.white : Colors.black,
-                      fontWeight: !_isExtrude ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10),
-        if (_currentTemperature > 195.5 && _currentTemperature >= _targetTemperature && !_isHeating)
-          SizedBox(
-            width: double.infinity,
-            height: 60,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-          textStyle: TextStyle(fontSize: fontSize + 6, fontWeight: FontWeight.bold),
-          padding: EdgeInsets.symmetric(vertical: 18),
-              ),
-              onPressed: () => _executeExtrudeRetract(usbService, context),
-              child: Text(_isExtrude ? 'Extrude'.tr() : 'Retract'.tr()),
-            ),
+            ActionChip(
+                label: Text('Custom'.tr()),
+                onPressed: () => _showCustomInputDialog(context, 'Length'.tr(),
+                    (value) => setState(() => _extrudeAmount = value))),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            ChoiceChip(
+                label: Text('Extrude'.tr()),
+                selected: _isExtrude,
+                onSelected: (_) => setState(() => _isExtrude = true)),
+            ChoiceChip(
+                label: Text('Retract'.tr()),
+                selected: !_isExtrude,
+                onSelected: (_) => setState(() => _isExtrude = false)),
+          ]),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: _currentTemperature > 195.5 &&
+                    _currentTemperature >= _targetTemperature &&
+                    !_isHeating &&
+                    _extrudeAmount > 0
+                ? () => _executeExtrudeRetract(usb, context)
+                : null,
+            child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(_isExtrude ? 'Extrude'.tr() : 'Retract'.tr())),
           ),
-      ],
-    );
-  }
-
-  Widget _buildXYZControls(
-      UsbConnectionService usbService, BuildContext context, double iconSize) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 50),
-        Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Card(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_up),
-                        iconSize: iconSize * 1.5,
-                        onPressed: () => usbService.sendGCode(
-                            "G91\nG0 Y10 F3000\nG90", context),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.keyboard_arrow_left),
-                            iconSize: iconSize * 1.5,
-                            onPressed: () => usbService.sendGCode(
-                                "G91\nG0 X-10 F3000\nG90", context),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.home),
-                            iconSize: iconSize * 1.5,
-                            onPressed: () =>
-                                usbService.sendGCode("G28", context),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.keyboard_arrow_right),
-                            iconSize: iconSize * 1.5,
-                            onPressed: () => usbService.sendGCode(
-                                "G91\nG0 X10 F3000\nG90", context),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        iconSize: iconSize * 1.5,
-                        onPressed: () => usbService.sendGCode(
-                            "G91\nG0 Y-10 F3000\nG90", context),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 1,
-              child: Card(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_upward),
-                        iconSize: iconSize * 1.5,
-                        onPressed: () => usbService.sendGCode(
-                            "G91\nG0 Z2 F300\nG90", context),
-                      ),
-                      const SizedBox(height: 20),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_downward),
-                        iconSize: iconSize * 1.5,
-                        onPressed: () => usbService.sendGCode(
-                            "G91\nG0 Z-2 F300\nG90", context),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
-    final tempSvc = Provider.of<TemperatureService>(context);
-    final usbService = Provider.of<UsbConnectionService>(context);
-
+    final tempSvc = context.watch<TemperatureService>();
+    final usb = context.watch<UsbConnectionService>();
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenWidth = constraints.maxWidth;
-          final iconSize = screenWidth < 600
-              ? 32.0
-              : screenWidth < 900
-                  ? 40.0
-                  : 48.0;
-          final fontSize = screenWidth < 600
-              ? 16.0
-              : screenWidth < 900
-                  ? 18.0
-                  : 20.0;
-
-          if (screenWidth < 600) {
-            // Small screens
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildXYZControls(usbService, context, iconSize),
-                  SizedBox(height: 10),
-                  _buildTemperatureControls(
-                      usbService, context, tempSvc, fontSize),
-                  SizedBox(height: 10),
-                  _buildExtrudeRetractControls(usbService, context, fontSize),
-                ],
-              ),
-            );
-          } else {
-            // Medium and Large screens
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      child: _buildXYZControls(usbService, context, iconSize)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTemperatureControls(
-                            usbService, context, tempSvc, fontSize),
-                        SizedBox(height: 20),
-                        _buildExtrudeRetractControls(
-                            usbService, context, fontSize),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-        },
+      appBar: AppBar(title: Text('Extrude_Retract_Length'.tr())),
+      body: PageScrollView(
+        child: AdaptiveColumns(
+          leading: MovementControls(
+              negativeYUp: false,
+              onCommand: (command) => usb.sendGCode(command, context)),
+          trailing: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildTemperatureControls(usb, context, tempSvc),
+              const SizedBox(height: 16),
+              _buildExtrudeRetractControls(usb, context),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,0 +1,6 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Preserve the existing package identity and its case-sensitive imports.
+    package_names: false

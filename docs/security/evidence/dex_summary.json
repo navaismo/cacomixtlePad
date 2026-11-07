@@ -1,0 +1,10 @@
+{
+  "apk": "build/app/outputs/flutter-apk/app-release.apk",
+  "class_presence": {
+    "org.apache.tika.Tika": true,
+    "org.apache.tika.utils.XMLReaderUtils": true,
+    "org.apache.tika.parser.pdf.PDFParser": false
+  },
+  "pdfbox_classes": [],
+  "notes": "Class presence confirms inclusion, not call-path reachability. R8 can rename classes; compare with the mapping and native plugin sources."
+}

@@ -1,0 +1,334 @@
+[
+  {
+    "name": "androidx.activity:activity",
+    "version": "1.8.1"
+  },
+  {
+    "name": "androidx.activity:activity-ktx",
+    "version": "1.8.1"
+  },
+  {
+    "name": "androidx.annotation:annotation-experimental",
+    "version": "1.4.1"
+  },
+  {
+    "name": "androidx.annotation:annotation-jvm",
+    "version": "1.9.1"
+  },
+  {
+    "name": "androidx.appcompat:appcompat",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.appcompat:appcompat-resources",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.arch.core:core-common",
+    "version": "2.2.0"
+  },
+  {
+    "name": "androidx.arch.core:core-runtime",
+    "version": "2.2.0"
+  },
+  {
+    "name": "androidx.asynclayoutinflater:asynclayoutinflater",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.collection:collection-jvm",
+    "version": "1.4.2"
+  },
+  {
+    "name": "androidx.collection:collection-ktx",
+    "version": "1.4.2"
+  },
+  {
+    "name": "androidx.concurrent:concurrent-futures",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.coordinatorlayout:coordinatorlayout",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.core:core",
+    "version": "1.15.0"
+  },
+  {
+    "name": "androidx.core:core-ktx",
+    "version": "1.15.0"
+  },
+  {
+    "name": "androidx.cursoradapter:cursoradapter",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.customview:customview",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.datastore:datastore-android",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-core-android",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-core-okio-jvm",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-preferences-android",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-preferences-core-jvm",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-preferences-external-protobuf",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.datastore:datastore-preferences-proto",
+    "version": "1.1.3"
+  },
+  {
+    "name": "androidx.documentfile:documentfile",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.drawerlayout:drawerlayout",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.fragment:fragment",
+    "version": "1.7.1"
+  },
+  {
+    "name": "androidx.fragment:fragment-ktx",
+    "version": "1.7.1"
+  },
+  {
+    "name": "androidx.interpolator:interpolator",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.legacy:legacy-support-core-ui",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.legacy:legacy-support-core-utils",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-common-java8",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-common-jvm",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-livedata",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-livedata-core",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-livedata-core-ktx",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-process",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-runtime-android",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-runtime-ktx-android",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel-android",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel-ktx",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate",
+    "version": "2.8.7"
+  },
+  {
+    "name": "androidx.loader:loader",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.localbroadcastmanager:localbroadcastmanager",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.preference:preference",
+    "version": "1.2.1"
+  },
+  {
+    "name": "androidx.print:print",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.profileinstaller:profileinstaller",
+    "version": "1.3.1"
+  },
+  {
+    "name": "androidx.recyclerview:recyclerview",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.savedstate:savedstate",
+    "version": "1.2.1"
+  },
+  {
+    "name": "androidx.savedstate:savedstate-ktx",
+    "version": "1.2.1"
+  },
+  {
+    "name": "androidx.slidingpanelayout:slidingpanelayout",
+    "version": "1.2.0"
+  },
+  {
+    "name": "androidx.startup:startup-runtime",
+    "version": "1.1.1"
+  },
+  {
+    "name": "androidx.swiperefreshlayout:swiperefreshlayout",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.tracing:tracing",
+    "version": "1.2.0"
+  },
+  {
+    "name": "androidx.transition:transition",
+    "version": "1.4.1"
+  },
+  {
+    "name": "androidx.vectordrawable:vectordrawable",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.vectordrawable:vectordrawable-animated",
+    "version": "1.1.0"
+  },
+  {
+    "name": "androidx.versionedparcelable:versionedparcelable",
+    "version": "1.1.1"
+  },
+  {
+    "name": "androidx.viewpager:viewpager",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.window.extensions.core:core",
+    "version": "1.0.0"
+  },
+  {
+    "name": "androidx.window:window",
+    "version": "1.2.0"
+  },
+  {
+    "name": "androidx.window:window-java",
+    "version": "1.2.0"
+  },
+  {
+    "name": "com.annimon:stream",
+    "version": "1.2.1"
+  },
+  {
+    "name": "com.getkeepsafe.relinker:relinker",
+    "version": "1.4.5"
+  },
+  {
+    "name": "com.github.felHR85:UsbSerial",
+    "version": "6.1.0"
+  },
+  {
+    "name": "com.google.guava:listenablefuture",
+    "version": "1.0"
+  },
+  {
+    "name": "com.squareup.okio:okio-jvm",
+    "version": "3.4.0"
+  },
+  {
+    "name": "commons-io:commons-io",
+    "version": "2.18.0"
+  },
+  {
+    "name": "io.flutter:arm64_v8a_release",
+    "version": "1.0.0-cf56914b326edb0ccb123ffdc60f00060bd513fa"
+  },
+  {
+    "name": "io.flutter:armeabi_v7a_release",
+    "version": "1.0.0-cf56914b326edb0ccb123ffdc60f00060bd513fa"
+  },
+  {
+    "name": "io.flutter:flutter_embedding_release",
+    "version": "1.0.0-cf56914b326edb0ccb123ffdc60f00060bd513fa"
+  },
+  {
+    "name": "io.flutter:x86_64_release",
+    "version": "1.0.0-cf56914b326edb0ccb123ffdc60f00060bd513fa"
+  },
+  {
+    "name": "org.apache.tika:tika-core",
+    "version": "3.1.0"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-android-extensions-runtime",
+    "version": "1.9.22"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-parcelize-runtime",
+    "version": "1.9.22"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-stdlib",
+    "version": "1.9.24"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk7",
+    "version": "1.8.22"
+  },
+  {
+    "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
+    "version": "1.8.22"
+  },
+  {
+    "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android",
+    "version": "1.7.3"
+  },
+  {
+    "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm",
+    "version": "1.7.3"
+  },
+  {
+    "name": "org.jetbrains:annotations",
+    "version": "23.0.0"
+  },
+  {
+    "name": "org.slf4j:slf4j-api",
+    "version": "2.0.16"
+  }
+]

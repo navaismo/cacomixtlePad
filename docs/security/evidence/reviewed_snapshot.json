@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-07",
+  "base_commit": "9f7a9e1bc807e0613bf2207c0e9c1477f8a97c37",
+  "worktree": "Uncommitted local changes included; these file hashes identify the reviewed snapshot.",
+  "files": {
+    "lib/main.dart": "6dfb4b4dff38c6792cedd714734012f06d125abee074a845b8bacb89554b7610",
+    "lib/services/upload_api.dart": "f2416b7d22e5cf952b60db88d25465242b82577c78aff84a40e7ce98dbec8bb3",
+    "lib/services/gcode_repository.dart": "5e344bd0e73afd8703309c8a4deedf1c0749af57d170b630d22c06d25b6dd02d",
+    "lib/services/print_job_service.dart": "e4afb6c1fbefc68bb8d70aa36fd99bae412a2c792ed60a160418146403c4d2b9",
+    "lib/services/gcode_protocol.dart": "2b3220c2e599c7d7237bfe9dd1e5bb53f674d12d618a6d02e92387bd93b17fe5",
+    "lib/services/usb_connection_service.dart": "a630d27f1ce7a3cec4562b6ab85a0c0e826f7534c9705b281645baee959b72a8",
+    "pubspec.lock": "b0edc3c52abbaa5ebf5ab44562d3ca9ff84c38a25aa2d1150d2ce72bfaa0e84e",
+    "pubspec.yaml": "4245fe0ee8634571b73c261841d5b27034d1dfcd6cf14069d1a2ddb4c49c49ba",
+    "android/app/src/main/AndroidManifest.xml": "6fd3be142b835abe3ef6f73a82c377701842137296dc9a0e1edce62d08962f80",
+    "android/app/build.gradle.kts": "cb8ecd94b2190f775702e9d8d6b9a0c9148cc6b1c788c17007e79d0a09733be0",
+    "android/settings.gradle.kts": "0ba12de2a146d476539fd2fa3dbbcfd6bd88e690d342fa4caf05888bb630dede",
+    ".github/workflows/ci.yml": "4312d574aae4ed94ca32ee38c6e148bb732240a0a4c6444cf247f7e5dd7ea248",
+    "tool/security_audit_poc.dart": "b5fce7875c3300fae3474a5954748d730d92199356b2ce4097f29e29594c26dc"
+  },
+  "flutter": "3.29.3",
+  "dart": "3.7.2",
+  "engine": "cf56914b326edb0ccb123ffdc60f00060bd513fa",
+  "native_libpng_banner": "1.6.43.git",
+  "libpng_revision": "de36b892e921c684ef718fec24739ae9bb49c977",
+  "skia_revision": "e7b8d078851fd505475fe74359e31a421e6968ea"
+}
