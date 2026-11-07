@@ -1,0 +1,8 @@
+00:00 +0: loading /home/shaka/Projects/Flutter/cacomixtlePad/tool/security_audit_poc.dart
+00:00 +0: HTTP exposes the reusable API credential to the transport
+00:00 +1: a file changed after preview is printed without an integrity check
+00:00 +2: the repository lock does not prevent changing a running print file
+00:00 +3: an accepted invalid UTF-8 upload prevents listing the whole library
+00:00 +4: per-file limits do not impose a total storage quota
+00:00 +5: the baseline upload handler allows unauthenticated path traversal
+00:00 +6: All tests passed!

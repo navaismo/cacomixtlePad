@@ -1,0 +1,2 @@
+Command: flutter analyze --no-pub tool/security_audit_poc.dart
+Result: No issues found.

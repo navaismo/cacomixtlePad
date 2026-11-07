@@ -3,40 +3,23 @@ import 'package:CacomixtlePad/pages/extrude_retract.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../services/usbConn_svc.dart';
+import '../services/usb_connection_service.dart';
+import '../widgets/number_input_dialog.dart';
+import '../widgets/responsive_layout.dart';
 
 class PreparePage extends StatelessWidget {
   const PreparePage({super.key});
 
-  void _showZOffsetDialog(BuildContext context) {
-    final usbService =
-        Provider.of<UsbConnectionService>(context, listen: false);
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title:  Text('Set_Z_Offset'.tr()),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(
-              decimal: true, signed: true),
-          decoration:  InputDecoration(hintText: "ex_string".tr()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              final value = double.tryParse(controller.text);
-              if (value != null && value >= -2.0 && value <= 2.0) {
-                usbService.sendGCode("M851 Z$value\n", context);
-              }
-              Navigator.pop(context);
-            },
-            child:  Text('OK'.tr()),
-          ),
-        ],
-      ),
-    );
+  Future<void> _showZOffsetDialog(BuildContext context) async {
+    final usb = context.read<UsbConnectionService>();
+    final value = await showNumberInputDialog(context,
+        title: 'Set_Z_Offset'.tr(),
+        hint: 'ex_string'.tr(),
+        minimum: -2,
+        maximum: 2);
+    if (value != null && context.mounted) {
+      usb.sendGCode('M851 Z$value\n', context);
+    }
   }
 
   void _confirmDisableMotors(BuildContext context) {
@@ -46,20 +29,21 @@ class PreparePage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title:  Text('Disable_All_Motors'.tr()),
-        content:
-             Text('disable_motors'.tr()),
+        scrollable: true,
+        insetPadding: const EdgeInsets.all(12),
+        title: Text('Disable_All_Motors'.tr()),
+        content: Text('disable_motors'.tr()),
         actions: [
           TextButton(
             onPressed: () {
               usbService.sendGCode("M84\nG92.9 Z0\n", context);
               Navigator.of(context).pop();
             },
-            child:  Text('Yes'.tr()),
+            child: Text('Yes'.tr()),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child:  Text('Cancel'.tr()),
+            child: Text('Cancel'.tr()),
           ),
         ],
       ),
@@ -76,7 +60,7 @@ class PreparePage extends StatelessWidget {
   }
 
   void _navigateBLholder(BuildContext context, String title) {
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BedLevelPage(),
@@ -84,114 +68,29 @@ class PreparePage extends StatelessWidget {
     );
   }
 
-
-  Widget _buildActionCard(
-      BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return Card(
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40),
-              const SizedBox(height: 10),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Widget _buildActionCard2(
-  //     BuildContext context, String asset, String label, VoidCallback onTap) {
-  //   final screen = MediaQuery.of(context).size;
-  //   final isWide = screen.width > 1000;
-  //   return Card(
-  //     elevation: 4,
-  //     child: InkWell(
-  //       onTap: onTap,
-  //       child: Padding(
-  //         padding: const EdgeInsets.all(16),
-  //         child: Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           children: [
-  //             Image.asset(
-  //               asset,
-  //               width: isWide ? 40 : 36,
-  //               height: isWide ? 40 : 36,
-  //             ),
-  //             const SizedBox(height: 10),
-  //             Text(label,
-  //                 textAlign: TextAlign.center,
-  //                 style: const TextStyle(fontSize: 15)),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-      Widget _buildActionCard3(
-      BuildContext context, String asset, String label, VoidCallback onTap) {
-    final screen = MediaQuery.of(context).size;
-    final isWide = screen.width > 1000;
-    return Card(
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                asset,
-                width: isWide ? 60 : 50,
-                height: isWide ? 60 : 50,
-              ),
-              const SizedBox(height: 10),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-
-
   @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView.extent(
-          maxCrossAxisExtent: 200,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.4,
-          children: [
-            _buildActionCard(context, Icons.vertical_align_center, 'Z_Offset'.tr(),
-                () => _showZOffsetDialog(context)),
-            _buildActionCard3(context, 'assets/icons/extrude1.png', 'Extrude'.tr(),
-                () => _navigatePlaceholder(context, 'Extrude')),
-            _buildActionCard3(context, 'assets/icons/retract.png', 'Retract'.tr(),
-                () => _navigatePlaceholder(context, 'Retract')),
-            _buildActionCard3(context, 'assets/icons/stepper.png', 'Disable_Motors'.tr(),
-                () => _confirmDisableMotors(context)),
-            _buildActionCard3(context, 'assets/icons/bedlevel4.png', 'Bed_Level'.tr(),
-                () => _navigateBLholder(context, 'Bed_Level'.tr())),    
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => PageScrollView(
+        child: ControlWrap(minWidth: 160, maxColumns: 4, children: [
+          ControlCard(
+              icon: const Icon(Icons.vertical_align_center, size: 40),
+              label: 'Z_Offset'.tr(),
+              onTap: () => _showZOffsetDialog(context)),
+          ControlCard(
+              icon: Image.asset('assets/icons/extrude1.png', height: 48),
+              label: 'Extrude'.tr(),
+              onTap: () => _navigatePlaceholder(context, 'Extrude')),
+          ControlCard(
+              icon: Image.asset('assets/icons/retract.png', height: 48),
+              label: 'Retract'.tr(),
+              onTap: () => _navigatePlaceholder(context, 'Retract')),
+          ControlCard(
+              icon: Image.asset('assets/icons/stepper.png', height: 48),
+              label: 'Disable_Motors'.tr(),
+              onTap: () => _confirmDisableMotors(context)),
+          ControlCard(
+              icon: Image.asset('assets/icons/bedlevel4.png', height: 48),
+              label: 'Bed_Level'.tr(),
+              onTap: () => _navigateBLholder(context, 'Bed_Level'.tr())),
+        ]),
+      );
 }

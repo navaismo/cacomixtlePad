@@ -1,24 +1,26 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'pages/home_page.dart';
 import 'package:shelf/shelf.dart';
-import 'package:path/path.dart' as path;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:shelf_multipart/multipart.dart';
-import 'package:shelf_multipart/form_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'services/gcode_repository.dart';
+import 'services/print_job_service.dart';
+import 'services/print_job_store.dart';
+import 'services/upload_api.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'pages/prepare_page.dart';
 import 'pages/print_page.dart';
 import 'pages/settings_page.dart';
 import 'services/temp_svc.dart';
-import 'services/usbConn_svc.dart';
+import 'services/usb_connection_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,11 +30,10 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  WakelockPlus.enable();
+  await WakelockPlus.enable();
 
   runApp(
     EasyLocalization(
-      startLocale: Locale.fromSubtags(languageCode: 'en'),
       supportedLocales: [
         Locale('en'),
         Locale('es'),
@@ -43,11 +44,20 @@ void main() async {
         Locale('pt')
       ],
       path: 'assets/lang',
-      fallbackLocale: Locale('en', 'US'),
+      fallbackLocale: Locale('en'),
       child: MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => TemperatureService()),
           ChangeNotifierProvider(create: (_) => UsbConnectionService()),
+          ChangeNotifierProvider(create: (_) => GcodeRepository()),
+          ChangeNotifierProvider(
+              create: (context) =>
+                  TemperatureService(context.read<UsbConnectionService>()),
+              lazy: false),
+          ChangeNotifierProvider(
+              create: (context) => PrintJobService(
+                  context.read<UsbConnectionService>(),
+                  context.read<GcodeRepository>(),
+                  store: PreferencesPrintJobStore())),
         ],
         child: PrinterApp(),
       ),
@@ -64,137 +74,84 @@ class PrinterApp extends StatefulWidget {
 
 class _PrinterAppState extends State<PrinterApp> {
   int _currentIndex = 0;
-  List<GcodeMetadata> gcodeFiles = [];
   HttpServer? _server;
   String? localIp;
-  String API_URL = '';
-  String Slicer_URL = '';
-  int API_Port = 8888;
+  String apiUrl = '';
+  String slicerUrl = '';
+  final int apiPort = 8888;
+  String apiKey = '';
+  String? _serverError;
+  bool _startingServer = false;
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void dispose() {
-    Provider.of<TemperatureService>(context, listen: false).stop();
-    Provider.of<UsbConnectionService>(context, listen: false).disposeService();
+    _server?.close(force: true);
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    _ensureGcodeFolder().then((_) {
-      _startUploadServer();
-      _getLocalIpAddress();
-    });
-  }
-
-  Future<String?> _getLocalIpAddress() async {
-    final NetworkInfo networkInfo = NetworkInfo();
-    try {
-      String? ip = await networkInfo.getWifiIP();
-      localIp = ip ?? '0.0.0.0';
-      setState(() {});
-      return localIp;
-    } catch (e) {
-      print('Error getting local IP: $e');
-      return '0.0.0.0';
-    }
-  }
-
-  Future<String> _getExternalGcodeDirectory() async {
-    final dir = Directory('/storage/emulated/0/Download/gcode_files');
-    if (!(await dir.exists())) await dir.create(recursive: true);
-    return dir.path;
-  }
-
-  Future<void> _ensureGcodeFolder() async {
-    if (!await Permission.manageExternalStorage.request().isGranted) {
-      print("Permission_denied".tr());
-    } else {
-      await _getExternalGcodeDirectory();
-    }
+    _startUploadServer();
   }
 
   Future<void> _startUploadServer() async {
-    final handler = (Request request) async {
-      if (request.method == 'POST' &&
-          (request.url.path == 'uploads' ||
-              request.url.path == 'api/files/local')) {
-        if (request.isMultipart && request.isMultipartForm) {
-          final formDataList = await request.multipartFormData.toList();
-
-          for (final formData in formDataList) {
-            final filename = formData.filename;
-            if (filename != null) {
-              final targetPath =
-                  path.join(await _getExternalGcodeDirectory(), filename);
-              final file = File(targetPath);
-              final sink = file.openWrite();
-              await formData.part.pipe(sink);
-              await sink.close();
-            }
-          }
-        } else {
-          return Response.badRequest(body: 'Not a multipart/form-data Request');
-        }
-        return Response.ok('File(s) uploaded successfully');
-      } else if (request.method == 'GET' && request.url.path == 'api/version') {
-        final apires = {
-          "api": "0.1",
-          "server": "1.11.1",
-          "text": "OctoPrint 1.11.1",
-        };
-
-        return Response.ok(jsonEncode(apires),
-            headers: {'Content-Type': 'application/json'});
-      } else if (request.method == 'GET' &&
-          request.url.path == 'api/settings') {
-        final settings = {
-          "accessControl": {
-            "autologinHeadsupAcknowledged": false,
-            "autologinLocal": false
-          },
-          "api": {"allowCrossOrigin": false, "key": null}
-        };
-        return Response.ok(jsonEncode(settings),
-            headers: {'Content-Type': 'application/json'});
+    if (_startingServer || _server != null) return;
+    _startingServer = true;
+    final repository = context.read<GcodeRepository>();
+    try {
+      await repository.ensureReady();
+      final prefs = await SharedPreferences.getInstance();
+      var key = prefs.getString('upload_api_key');
+      if (key == null) {
+        final random = Random.secure();
+        key = base64UrlEncode(List.generate(32, (_) => random.nextInt(256)));
+        await prefs.setString('upload_api_key', key);
       }
-
-      return Response.notFound('Path_not_found'.tr());
-    };
-
-    final ip = await _getLocalIpAddress();
-    _server = await shelf_io.serve(
-      logRequests().addHandler(handler),
-      InternetAddress(ip ?? '0.0.0.0'),
-      API_Port,
-    );
-
-    print('Server ready: http://$ip:${_server!.port}/uploads');
-    setState(() {
-      API_URL = 'http://$ip:$API_Port/uploads';
-      Slicer_URL = 'http://$ip:$API_Port';
-    });
+      String ip = '0.0.0.0';
+      try {
+        ip = await NetworkInfo().getWifiIP() ?? ip;
+      } catch (_) {
+        // Wi-Fi may be unavailable when the app starts. The server can still
+        // listen on local interfaces if Wi-Fi connects later.
+      }
+      if (!mounted) return;
+      final server = await shelf_io.serve(
+        logRequests().addHandler(UploadApi(repository, apiKey: key).call),
+        InternetAddress(ip),
+        apiPort,
+      );
+      if (!mounted) {
+        await server.close(force: true);
+        return;
+      }
+      _server = server;
+      setState(() {
+        localIp = ip;
+        apiKey = key!;
+        apiUrl = 'http://$ip:$apiPort/uploads';
+        slicerUrl = 'http://$ip:$apiPort';
+        _serverError = null;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _serverError = error.toString());
+    } finally {
+      _startingServer = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final usbService = Provider.of<UsbConnectionService>(context);
-    final tempService = Provider.of<TemperatureService>(context);
-
-    print(context.locale);
-    print(tr('Home'));
-
-    if (usbService.port != null && usbService.isConnected) {
-      tempService.start(usbService.port!);
-    }
-
     final screen = MediaQuery.of(context).size;
     final isWide = screen.width > 1000;
 
     final pages = [
       HomePage(
-        API_URL: API_URL,
-        Slicer_URL: Slicer_URL,
+        apiUrl: apiUrl,
+        slicerUrl: slicerUrl,
+        apiKey: apiKey,
       ),
       const PrintPage(),
       const PreparePage(),
@@ -202,32 +159,81 @@ class _PrinterAppState extends State<PrinterApp> {
     ];
 
     return MaterialApp(
+      scaffoldMessengerKey: _messenger,
       locale: context.locale,
       supportedLocales: context.supportedLocales,
       localizationsDelegates: context.localizationDelegates,
       title: 'Cacomixtle-Pad',
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(minimumSize: const Size(48, 48))),
+        filledButtonTheme: FilledButtonThemeData(
+            style: FilledButton.styleFrom(minimumSize: const Size(48, 48))),
+      ),
       home: Scaffold(
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return pages[_currentIndex];
+              return Column(children: [
+                if (_serverError != null)
+                  SizedBox(
+                    height: 48,
+                    child: Row(children: [
+                      IconButton(
+                        icon: const Icon(Icons.info_outline),
+                        tooltip: _serverError,
+                        onPressed: () => showDialog<void>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            scrollable: true,
+                            insetPadding: const EdgeInsets.all(12),
+                            title: Text('Server_unavailable'.tr()),
+                            content: Text(_serverError!.tr()),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: Text('Close'.tr()),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                          child: Text('Server_unavailable'.tr(),
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      IconButton(
+                          onPressed: _startUploadServer,
+                          tooltip: 'Retry'.tr(),
+                          icon: const Icon(Icons.refresh)),
+                    ]),
+                  ),
+                Expanded(child: pages[_currentIndex]),
+              ]);
             },
           ),
         ),
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.only(bottom: 15.0),
-          child: Container(
-            height: isWide ? 80 : 60,
+        bottomNavigationBar: Builder(builder: (context) {
+          if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+            return const SizedBox.shrink();
+          }
+          return SafeArea(
+            top: false,
             child: BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
-              iconSize: isWide ? 34 : 28,
-              selectedFontSize: isWide ? 18 : 16,
-              unselectedFontSize: isWide ? 16 : 14,
+              iconSize: isWide ? 30 : 24,
+              selectedFontSize: isWide ? 16 : 12,
+              unselectedFontSize: isWide ? 14 : 12,
               currentIndex: _currentIndex,
-              onTap: (index) {
+              onTap: (index) async {
                 if (index == 4) {
-                  usbService.connect();
+                  try {
+                    await usbService.connect();
+                  } catch (error) {
+                    if (context.mounted) {
+                      _messenger.currentState?.showSnackBar(
+                          SnackBar(content: Text(error.toString())));
+                    }
+                  }
                 } else {
                   setState(() => _currentIndex = index);
                 }
@@ -262,12 +268,16 @@ class _PrinterAppState extends State<PrinterApp> {
                   ),
                   label: usbService.isConnected
                       ? 'Connected'.tr()
-                      : 'Connect'.tr(),
+                      : (usbService.isConnecting
+                          ? 'Connecting'.tr()
+                          : usbService.lastError != null
+                              ? 'Connection_failed'.tr()
+                              : 'Connect'.tr()),
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }

@@ -71,7 +71,27 @@
     "Bed_Level_Visualizer": "Druckbett-Nivellierungsvisualisierung",
     "Get_Grid": "Gitter abrufen",
     "Start_New_Level": "Neue Nivellierung starten",
-    "About": "Über die App"
-
-
+    "About": "Über die App",
+    "Close": "Schließen",
+    "Printer_busy": "Drucker beschäftigt",
+    "File_exists": "Datei existiert bereits",
+    "File_too_large": "Datei zu groß",
+    "Empty_file": "Leere Datei",
+    "No_gcode_files": "Keine G-code-Dateien. Laden Sie eine Datei hoch.",
+    "Retry": "Erneut versuchen",
+    "Server_unavailable": "Upload-Server nicht verfügbar",
+    "Active_print": "Aktiver Druck",
+    "Status_Loading": "Status: Laden",
+    "Status_Cancelling": "Status: Abbruch läuft",
+    "Status_Cancelled": "Status: Abgebrochen",
+    "Status_Failed": "Status: Fehlgeschlagen",
+    "Connecting": "Verbinden",
+    "Connection_failed": "Verbindung fehlgeschlagen",
+    "Api_key": "API-Schlüssel",
+    "Copy": "Kopieren",
+    "Invalid_value": "Ungültiger Wert",
+    "Status_Interrupted": "Status: Unterbrochen",
+    "Print_interrupted": "Der vorherige Druck wurde unterbrochen. Er wird nicht automatisch fortgesetzt.",
+    "Print_history_unavailable": "Druckverlauf nicht verfügbar.",
+    "Last_print": "Letzter Druck"
 }

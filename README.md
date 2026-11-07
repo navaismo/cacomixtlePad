@@ -7,7 +7,7 @@
 <br>
 
 [Cacomixtle](https://unamglobal.unam.mx/global_revista/cacomixtle-adaptaciones-del-bosque-a-la-ciudad-de-mexico/)Pad is an Android application to control your Ender 3 V3 SE 3D Printer (and probably any Marlin 2 based printer).  
-The idea is to have a quick, responsive, and modern replacement for the LCD.
+I built it as a quick, responsive, and modern replacement for the LCD.
 
 ---
 
@@ -153,10 +153,12 @@ Use an OTG connector for your phone, and connect the serial cable from the OTG a
 ## Postman/Bruno Upload
 
 While the application is running and no print jobs are working, you can upload files using Postman, Bruno, or any other API client.  
-Use this cURL request (replace the IP with the one reported in your Home Page as: API URL):
+Open **API key** on the Home Page and copy the key. Use it as the `X-Api-Key` header.
+Use this cURL request (replace the IP with the one reported in your Home Page as: API URL and replace `YOUR_API_KEY` with your key):
 
 ```bash
 curl --location 'http://10.0.1.80:8888/uploads' \
+--header 'X-Api-Key: YOUR_API_KEY' \
 --form 'file=@"/run/user/1000/doc/c894368d/M73Cube_PLA_5m53s.gcode"'
 ```
 
@@ -168,7 +170,7 @@ curl --location 'http://10.0.1.80:8888/uploads' \
 
   ![orca](./extras/iconorca.png)
 
-- Select Octoprint as the type and enter the IP reported in the home page. Then click on test.
+- Select Octoprint as the type and enter the IP reported in the home page. Paste the key from **Home → API key** into the API key field. Then click on test.
 
   ![connorca](./extras/settingsorca.png)
 
@@ -185,7 +187,7 @@ curl --location 'http://10.0.1.80:8888/uploads' \
   ![orca](./extras/cura1.png)
 
 - On the next screen, select the added item.
-- Add a dummy password: `1234`
+- Paste the key from **Home → API key** into the API key field.
 - Unselect all options.
 - Click on Connect
 
@@ -197,6 +199,11 @@ curl --location 'http://10.0.1.80:8888/uploads' \
 
 ## Hints
 
+- Printing continues when you navigate between screens inside CacomixtlePad. Return to **Print → Active print** to view its controls. The last job state is saved. After a process restart, an unfinished job appears as interrupted; it does not resume printer movements automatically.
+- Pause stops sending new G-code; movements already accepted by the printer can finish. Cancel waits for the in-flight command, disables the heaters and fan, and drains accepted movements without moving the head to a fixed position. Heating or probing already in progress can delay cancellation.
+- Uploads require the API key and are blocked during active jobs. Existing filenames return `409`; rename or delete the old file first. Limits are 256 MiB per file and 512 MiB per request.
+- Debug builds now communicate with real hardware too; automatic debug simulation has been removed.
+
 - Although during print time the cellphone does not lock the screen, make a quick test before printing large jobs or it can be lost.
 - Consider the battery of your cellphone for long prints; you don't want to lose your job because the cellphone died.
 - Check if your phone can be charged while using OTG: [OTG Charging Compatibility Sheet](https://docs.google.com/spreadsheets/d/1pbKAELzvTrMVm6NpDpK8TfQR33w3QHQEgqkcGdbPFI0/edit?usp=sharing) (from Octo4A project).
@@ -206,7 +213,7 @@ curl --location 'http://10.0.1.80:8888/uploads' \
 ## Disclaimer
 
 **BAU:**  
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+I provide this app as is, without warranty. See [LICENSE](LICENSE) for the full warranty and liability terms.
 
 **TL;DR:**  
 If your house burns down because this app malfunctioned, you cannot sue me.
@@ -215,4 +222,6 @@ If your house burns down because this app malfunctioned, you cannot sue me.
 
 ## License
 
-This project is licensed under the AGPL license.
+I share this project under the [GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`).
+
+For local checks, CI and signed APKs, see [Development and release](docs/RELEASE.md).

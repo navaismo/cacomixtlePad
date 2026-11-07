@@ -46,10 +46,12 @@ app.*.map.json
 linux
 macos
 windows
-test
 web
 ios
-pubspec.lock
-analysis_options.yaml
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Local release signing material
+/.signing/
+*.p12
+*.pfx

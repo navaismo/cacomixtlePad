@@ -3,28 +3,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:CacomixtlePad/services/usbConn_svc.dart';
+import 'package:CacomixtlePad/services/usb_connection_service.dart';
 import 'package:easy_localization/easy_localization.dart';
-
-//! I dont undertand this class, but IA does so it helped to correct the code lol
-
-class GridPoint {
-  final int x, y;
-  GridPoint(this.x, this.y);
-  @override
-  bool operator ==(Object o) => o is GridPoint && o.x == x && o.y == y;
-  @override
-  int get hashCode => x.hashCode ^ y.hashCode;
-}
+import '../widgets/responsive_layout.dart';
 
 class BedLevelPage extends StatefulWidget {
-  const BedLevelPage({Key? key}) : super(key: key);
+  const BedLevelPage({super.key});
   @override
-  _BedLevelPageState createState() => _BedLevelPageState();
+  State<BedLevelPage> createState() => _BedLevelPageState();
 }
 
 class _BedLevelPageState extends State<BedLevelPage> {
   List<List<double>>? _grid2D;
+  String? _error;
+  bool _levelling = false;
 
   @override
   void initState() {
@@ -36,7 +28,10 @@ class _BedLevelPageState extends State<BedLevelPage> {
     final usbService =
         Provider.of<UsbConnectionService>(context, listen: false);
     final map = await usbService.getBLGrid(context);
-    if (map.isEmpty) return;
+    if (map.isEmpty) {
+      if (mounted) setState(() => _error = 'BL_failed');
+      return;
+    }
 
     final xs = map.keys.map((p) => p.x).toSet().toList()..sort();
     final ys = map.keys.map((p) => p.y).toSet().toList()..sort();
@@ -58,12 +53,13 @@ class _BedLevelPageState extends State<BedLevelPage> {
       }
     }
 
-    setState(() => _grid2D = grid2D);
+    if (mounted) setState(() => _grid2D = grid2D);
   }
 
   void refreshGrid() async {
     setState(() {
       _grid2D = null;
+      _error = null;
     });
     await _loadGrid();
     // refresh the heatmap in the UI
@@ -72,14 +68,15 @@ class _BedLevelPageState extends State<BedLevelPage> {
   void newBedLevel(BuildContext context) async {
     final usbService =
         Provider.of<UsbConnectionService>(context, listen: false);
-    dialogShow(context, 'New_BL'.tr());
-    final r = await usbService.startBL(context);
-    
-    if (r){
- 
+    if (_levelling) return;
+    setState(() => _levelling = true);
+    final success = await usbService.startBL(context);
+    if (!mounted) return;
+    setState(() => _levelling = false);
+    if (success) {
       refreshGrid();
-    }else{
-      dialogShow(context, 'BL_failed'.tr());
+    } else {
+      dialogShow(this.context, 'BL_failed'.tr());
     }
   }
 
@@ -88,63 +85,17 @@ class _BedLevelPageState extends State<BedLevelPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          scrollable: true,
+          insetPadding: const EdgeInsets.all(12),
           title: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child:  Text('OK'.tr()),
+              child: Text('OK'.tr()),
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildActionCard(IconData icon, String label, VoidCallback onTap) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 50),
-              const SizedBox(height: 10),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 17)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard2(String asset, String label, VoidCallback onTap) {
-    final screen = MediaQuery.of(context).size;
-    final isWide = screen.width > 1000;
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                asset,
-                width: isWide ? 60 : 50,
-                height: isWide ? 60 : 50,
-              ),
-              const SizedBox(height: 10),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 17)),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -167,64 +118,43 @@ class _BedLevelPageState extends State<BedLevelPage> {
       appBar: AppBar(
         title: Text('Bed_Level_Visualizer'.tr()),
       ),
-      body: Center(
-        child: _grid2D == null
-            ? const CircularProgressIndicator()
-            : SizedBox(
-                width: 1100, // Bigger cards
-                height: 500,
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 1.3,
-                  children: [
-                    // Heatmap & stats card (left)
-                    Card(
-                      elevation: 4,
+      body: PageScrollView(
+        child: _error != null
+            ? Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(_error!.tr()),
+                TextButton(onPressed: refreshGrid, child: Text('Retry'.tr())),
+              ])
+            : _grid2D == null
+                ? const Center(child: CircularProgressIndicator())
+                : AdaptiveColumns(
+                    leading: Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Center(
-                          child: CustomPaint(
-                            size: const Size(420, 420),
-                            painter: _HeatmapMeshPainter(
-                              _grid2D!,
-                              minZ: minZ,
-                              maxZ: maxZ,
-                              zRange: zRange,
-                            ),
-                          ),
+                        padding: const EdgeInsets.all(16),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: ClipRect(
+                              child: CustomPaint(
+                            painter: _HeatmapMeshPainter(_grid2D!,
+                                minZ: minZ, maxZ: maxZ, zRange: zRange),
+                          )),
                         ),
                       ),
                     ),
-                    // Buttons card (right)
-                    Card(
-                      color: Colors.white.withAlpha((0.026 * 255).round()),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: GridView.count(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.5,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            _buildActionCard(Icons.border_clear_rounded, 'Get_Grid'.tr(),
-                                refreshGrid),
-                            _buildActionCard2(
-                                'assets/icons/bedlevel4.png',
-                                'Start_New_Level'.tr(),
-                                () => newBedLevel(context)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    trailing:
+                        ControlWrap(minWidth: 160, maxColumns: 2, children: [
+                      ControlCard(
+                          icon:
+                              const Icon(Icons.border_clear_rounded, size: 40),
+                          label: 'Get_Grid'.tr(),
+                          onTap: refreshGrid),
+                      ControlCard(
+                          icon: Image.asset('assets/icons/bedlevel4.png',
+                              height: 48),
+                          label: 'Start_New_Level'.tr(),
+                          enabled: !_levelling,
+                          onTap: () => newBedLevel(context)),
+                    ]),
+                  ),
       ),
     );
   }
@@ -249,10 +179,7 @@ class _HeatmapMeshPainter extends CustomPainter {
     }
 
     final zRangeVal = (maxZval - minZval).clamp(1e-6, double.infinity);
-    final cellSize = math.min(size.width / (nx + ny), size.height / (nx + ny)) *
-        2; // Adjust the last number(2) to zoom in/out
-    final zScale =
-        8.0; // Adjust this value to change the height of Z scale mking deeper valleys and higher peaks
+    const zScale = 8.0;
 
     final ax = -math.pi / 6;
     final ay = math.pi / 4;
@@ -272,10 +199,7 @@ class _HeatmapMeshPainter extends CustomPainter {
         final zt = -gx * sinB + gz * cosB;
         final yt = gy * cosA - zt * sinA;
 
-        final px = xt * cellSize + size.width / 2;
-        final py = -yt * cellSize + size.height / 2;
-
-        positions.add(Offset(px, py));
+        positions.add(Offset(xt, -yt));
 
         final t = ((grid[iy][ix] - minZval) / zRangeVal).clamp(0.0, 1.0);
         final col = t < 0.5
@@ -283,6 +207,26 @@ class _HeatmapMeshPainter extends CustomPainter {
             : Color.lerp(Colors.green, Colors.red, (t - 0.5) * 2)!;
         colors.add(col);
       }
+    }
+
+    // Fit the projected mesh below the statistics instead of using a fixed zoom.
+    final left = positions.map((p) => p.dx).reduce(math.min);
+    final right = positions.map((p) => p.dx).reduce(math.max);
+    final top = positions.map((p) => p.dy).reduce(math.min);
+    final bottom = positions.map((p) => p.dy).reduce(math.max);
+    const padding = 24.0;
+    const statsHeight = 72.0;
+    final availableWidth = math.max(1.0, size.width - padding * 2);
+    final availableHeight =
+        math.max(1.0, size.height - statsHeight - padding * 2);
+    final scale = math.min(availableWidth / math.max(1e-6, right - left),
+        availableHeight / math.max(1e-6, bottom - top));
+    final center =
+        Offset(size.width / 2, statsHeight + padding + availableHeight / 2);
+    for (var i = 0; i < positions.length; i++) {
+      positions[i] = center +
+          Offset((positions[i].dx - (left + right) / 2) * scale,
+              (positions[i].dy - (top + bottom) / 2) * scale);
     }
 
     final indices = <int>[];
@@ -305,7 +249,7 @@ class _HeatmapMeshPainter extends CustomPainter {
     final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5
-      ..color = Colors.black.withOpacity(0.1);
+      ..color = Colors.black.withValues(alpha: 0.1);
 
     for (int i = 0; i < indices.length; i += 3) {
       final p0 = positions[indices[i]];
@@ -362,21 +306,13 @@ class _HeatmapMeshPainter extends CustomPainter {
           fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green),
     ];
 
-    //final topOffset = Offset(size.width / 2, 20);
     for (int i = 0; i < stats.length; i++) {
       textPainter.text = TextSpan(text: stats[i], style: statStyle[i]);
-      textPainter.layout();
-      final paragraphBuilder =
-          ui.ParagraphBuilder(ui.ParagraphStyle(textAlign: TextAlign.center))
-            ..pushStyle(statStyle[i].getTextStyle())
-            ..addText(stats[i]);
-      final paragraph = paragraphBuilder.build();
-      paragraph.layout(ui.ParagraphConstraints(width: size.width));
-      canvas.drawParagraph(
-        paragraph,
-        Offset(size.width / 2 - textPainter.width / 2, i * 22),
-      );
+      textPainter.layout(maxWidth: size.width);
+      textPainter.paint(
+          canvas, Offset((size.width - textPainter.width) / 2, i * 22));
     }
+    textPainter.dispose();
   }
 
   @override

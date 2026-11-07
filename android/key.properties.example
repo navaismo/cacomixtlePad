@@ -1,0 +1,7 @@
+# Copy to android/key.properties and fill the passwords locally.
+# This path is relative to android/; an absolute path also works.
+storeFile=../.signing/release.p12
+storePassword=REPLACE_LOCALLY
+keyAlias=cacomixtlepad
+# PKCS12 uses the same password for the store and key.
+keyPassword=REPLACE_LOCALLY

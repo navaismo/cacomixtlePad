@@ -1,0 +1,721 @@
+{
+  "date": "2026-11-07",
+  "endpoint": "https://api.osv.dev/v1/querybatch",
+  "scope": "Hosted packages from pubspec.lock",
+  "queries": [
+    {
+      "package": {
+        "name": "ansicolor",
+        "ecosystem": "Pub"
+      },
+      "version": "2.0.3"
+    },
+    {
+      "package": {
+        "name": "archive",
+        "ecosystem": "Pub"
+      },
+      "version": "4.0.7"
+    },
+    {
+      "package": {
+        "name": "args",
+        "ecosystem": "Pub"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "package": {
+        "name": "async",
+        "ecosystem": "Pub"
+      },
+      "version": "2.12.0"
+    },
+    {
+      "package": {
+        "name": "boolean_selector",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.2"
+    },
+    {
+      "package": {
+        "name": "characters",
+        "ecosystem": "Pub"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "package": {
+        "name": "checked_yaml",
+        "ecosystem": "Pub"
+      },
+      "version": "2.0.3"
+    },
+    {
+      "package": {
+        "name": "cli_util",
+        "ecosystem": "Pub"
+      },
+      "version": "0.4.2"
+    },
+    {
+      "package": {
+        "name": "clock",
+        "ecosystem": "Pub"
+      },
+      "version": "1.1.2"
+    },
+    {
+      "package": {
+        "name": "collection",
+        "ecosystem": "Pub"
+      },
+      "version": "1.19.1"
+    },
+    {
+      "package": {
+        "name": "cross_file",
+        "ecosystem": "Pub"
+      },
+      "version": "0.3.4+2"
+    },
+    {
+      "package": {
+        "name": "crypto",
+        "ecosystem": "Pub"
+      },
+      "version": "3.0.6"
+    },
+    {
+      "package": {
+        "name": "csslib",
+        "ecosystem": "Pub"
+      },
+      "version": "1.0.2"
+    },
+    {
+      "package": {
+        "name": "dbus",
+        "ecosystem": "Pub"
+      },
+      "version": "0.7.11"
+    },
+    {
+      "package": {
+        "name": "easy_localization",
+        "ecosystem": "Pub"
+      },
+      "version": "3.0.7+1"
+    },
+    {
+      "package": {
+        "name": "easy_logger",
+        "ecosystem": "Pub"
+      },
+      "version": "0.0.2"
+    },
+    {
+      "package": {
+        "name": "fake_async",
+        "ecosystem": "Pub"
+      },
+      "version": "1.3.2"
+    },
+    {
+      "package": {
+        "name": "ffi",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.4"
+    },
+    {
+      "package": {
+        "name": "file",
+        "ecosystem": "Pub"
+      },
+      "version": "7.0.1"
+    },
+    {
+      "package": {
+        "name": "file_picker",
+        "ecosystem": "Pub"
+      },
+      "version": "10.1.9"
+    },
+    {
+      "package": {
+        "name": "flutter_launcher_icons",
+        "ecosystem": "Pub"
+      },
+      "version": "0.14.3"
+    },
+    {
+      "package": {
+        "name": "flutter_lints",
+        "ecosystem": "Pub"
+      },
+      "version": "5.0.0"
+    },
+    {
+      "package": {
+        "name": "flutter_native_splash",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.6"
+    },
+    {
+      "package": {
+        "name": "flutter_plugin_android_lifecycle",
+        "ecosystem": "Pub"
+      },
+      "version": "2.0.28"
+    },
+    {
+      "package": {
+        "name": "html",
+        "ecosystem": "Pub"
+      },
+      "version": "0.15.6"
+    },
+    {
+      "package": {
+        "name": "http",
+        "ecosystem": "Pub"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "package": {
+        "name": "http_parser",
+        "ecosystem": "Pub"
+      },
+      "version": "4.1.2"
+    },
+    {
+      "package": {
+        "name": "image",
+        "ecosystem": "Pub"
+      },
+      "version": "4.5.4"
+    },
+    {
+      "package": {
+        "name": "intl",
+        "ecosystem": "Pub"
+      },
+      "version": "0.19.0"
+    },
+    {
+      "package": {
+        "name": "json_annotation",
+        "ecosystem": "Pub"
+      },
+      "version": "4.9.0"
+    },
+    {
+      "package": {
+        "name": "leak_tracker",
+        "ecosystem": "Pub"
+      },
+      "version": "10.0.8"
+    },
+    {
+      "package": {
+        "name": "leak_tracker_flutter_testing",
+        "ecosystem": "Pub"
+      },
+      "version": "3.0.9"
+    },
+    {
+      "package": {
+        "name": "leak_tracker_testing",
+        "ecosystem": "Pub"
+      },
+      "version": "3.0.1"
+    },
+    {
+      "package": {
+        "name": "lints",
+        "ecosystem": "Pub"
+      },
+      "version": "5.1.1"
+    },
+    {
+      "package": {
+        "name": "matcher",
+        "ecosystem": "Pub"
+      },
+      "version": "0.12.17"
+    },
+    {
+      "package": {
+        "name": "material_color_utilities",
+        "ecosystem": "Pub"
+      },
+      "version": "0.11.1"
+    },
+    {
+      "package": {
+        "name": "meta",
+        "ecosystem": "Pub"
+      },
+      "version": "1.16.0"
+    },
+    {
+      "package": {
+        "name": "mime",
+        "ecosystem": "Pub"
+      },
+      "version": "1.0.6"
+    },
+    {
+      "package": {
+        "name": "nested",
+        "ecosystem": "Pub"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "package": {
+        "name": "network_info_plus",
+        "ecosystem": "Pub"
+      },
+      "version": "5.0.3"
+    },
+    {
+      "package": {
+        "name": "network_info_plus_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "2.0.2"
+    },
+    {
+      "package": {
+        "name": "nm",
+        "ecosystem": "Pub"
+      },
+      "version": "0.5.0"
+    },
+    {
+      "package": {
+        "name": "package_info_plus",
+        "ecosystem": "Pub"
+      },
+      "version": "8.3.0"
+    },
+    {
+      "package": {
+        "name": "package_info_plus_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "3.2.0"
+    },
+    {
+      "package": {
+        "name": "path",
+        "ecosystem": "Pub"
+      },
+      "version": "1.9.1"
+    },
+    {
+      "package": {
+        "name": "path_provider",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.5"
+    },
+    {
+      "package": {
+        "name": "path_provider_android",
+        "ecosystem": "Pub"
+      },
+      "version": "2.2.17"
+    },
+    {
+      "package": {
+        "name": "path_provider_foundation",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.1"
+    },
+    {
+      "package": {
+        "name": "path_provider_linux",
+        "ecosystem": "Pub"
+      },
+      "version": "2.2.1"
+    },
+    {
+      "package": {
+        "name": "path_provider_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.2"
+    },
+    {
+      "package": {
+        "name": "path_provider_windows",
+        "ecosystem": "Pub"
+      },
+      "version": "2.3.0"
+    },
+    {
+      "package": {
+        "name": "permission_handler",
+        "ecosystem": "Pub"
+      },
+      "version": "12.0.3"
+    },
+    {
+      "package": {
+        "name": "permission_handler_android",
+        "ecosystem": "Pub"
+      },
+      "version": "13.0.1"
+    },
+    {
+      "package": {
+        "name": "permission_handler_apple",
+        "ecosystem": "Pub"
+      },
+      "version": "9.4.7"
+    },
+    {
+      "package": {
+        "name": "permission_handler_html",
+        "ecosystem": "Pub"
+      },
+      "version": "0.1.3+5"
+    },
+    {
+      "package": {
+        "name": "permission_handler_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "4.3.0"
+    },
+    {
+      "package": {
+        "name": "permission_handler_windows",
+        "ecosystem": "Pub"
+      },
+      "version": "0.2.1"
+    },
+    {
+      "package": {
+        "name": "petitparser",
+        "ecosystem": "Pub"
+      },
+      "version": "6.1.0"
+    },
+    {
+      "package": {
+        "name": "platform",
+        "ecosystem": "Pub"
+      },
+      "version": "3.1.6"
+    },
+    {
+      "package": {
+        "name": "plugin_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.8"
+    },
+    {
+      "package": {
+        "name": "posix",
+        "ecosystem": "Pub"
+      },
+      "version": "6.0.2"
+    },
+    {
+      "package": {
+        "name": "provider",
+        "ecosystem": "Pub"
+      },
+      "version": "6.1.5"
+    },
+    {
+      "package": {
+        "name": "shared_preferences",
+        "ecosystem": "Pub"
+      },
+      "version": "2.5.3"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_android",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.10"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_foundation",
+        "ecosystem": "Pub"
+      },
+      "version": "2.5.4"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_linux",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.1"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.1"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_web",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.3"
+    },
+    {
+      "package": {
+        "name": "shared_preferences_windows",
+        "ecosystem": "Pub"
+      },
+      "version": "2.4.1"
+    },
+    {
+      "package": {
+        "name": "shelf",
+        "ecosystem": "Pub"
+      },
+      "version": "1.4.2"
+    },
+    {
+      "package": {
+        "name": "shelf_multipart",
+        "ecosystem": "Pub"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "package": {
+        "name": "source_span",
+        "ecosystem": "Pub"
+      },
+      "version": "1.10.1"
+    },
+    {
+      "package": {
+        "name": "stack_trace",
+        "ecosystem": "Pub"
+      },
+      "version": "1.12.1"
+    },
+    {
+      "package": {
+        "name": "stream_channel",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.4"
+    },
+    {
+      "package": {
+        "name": "string_scanner",
+        "ecosystem": "Pub"
+      },
+      "version": "1.4.1"
+    },
+    {
+      "package": {
+        "name": "term_glyph",
+        "ecosystem": "Pub"
+      },
+      "version": "1.2.2"
+    },
+    {
+      "package": {
+        "name": "test_api",
+        "ecosystem": "Pub"
+      },
+      "version": "0.7.4"
+    },
+    {
+      "package": {
+        "name": "typed_data",
+        "ecosystem": "Pub"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "package": {
+        "name": "universal_io",
+        "ecosystem": "Pub"
+      },
+      "version": "2.2.2"
+    },
+    {
+      "package": {
+        "name": "usb_serial",
+        "ecosystem": "Pub"
+      },
+      "version": "0.5.2"
+    },
+    {
+      "package": {
+        "name": "vector_math",
+        "ecosystem": "Pub"
+      },
+      "version": "2.1.4"
+    },
+    {
+      "package": {
+        "name": "vm_service",
+        "ecosystem": "Pub"
+      },
+      "version": "14.3.1"
+    },
+    {
+      "package": {
+        "name": "wakelock_plus",
+        "ecosystem": "Pub"
+      },
+      "version": "1.3.2"
+    },
+    {
+      "package": {
+        "name": "wakelock_plus_platform_interface",
+        "ecosystem": "Pub"
+      },
+      "version": "1.2.3"
+    },
+    {
+      "package": {
+        "name": "web",
+        "ecosystem": "Pub"
+      },
+      "version": "1.1.1"
+    },
+    {
+      "package": {
+        "name": "win32",
+        "ecosystem": "Pub"
+      },
+      "version": "5.13.0"
+    },
+    {
+      "package": {
+        "name": "xdg_directories",
+        "ecosystem": "Pub"
+      },
+      "version": "1.1.0"
+    },
+    {
+      "package": {
+        "name": "xml",
+        "ecosystem": "Pub"
+      },
+      "version": "6.5.0"
+    },
+    {
+      "package": {
+        "name": "yaml",
+        "ecosystem": "Pub"
+      },
+      "version": "3.1.3"
+    }
+  ],
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}
+  ]
+}
