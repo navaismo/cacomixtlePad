@@ -19,6 +19,7 @@ dependencies:
   shared_preferences: ^2.0.15
   wakelock_plus: ^1.2.8
   network_info_plus: ^5.0.0
+  package_info_plus: ^8.0.0
   
 
   flutter_localizations:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../services/usb_connection_service.dart';
+import '../services/app_info_service.dart';
 import '../widgets/responsive_layout.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -117,23 +118,27 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _aboutApp(BuildContext context) => _showDetails(
-      context,
-      'About'.tr(),
-      const {
-        'Version': '1.1.1',
-        'Build date': '2025-05-23',
-        'Author': 'Navaismo',
-        'Info': 'CacomixtlePad is an Android app for controlling the 3D printer '
-            'Ender 3 V3 SE and probably other printers with Marlin firmware.',
-        'Source code': 'https://github.com/navaismo/cacomixtlePad',
-        'Disclaimer':
-            'This app is not affiliated with Creality or any other company. '
-                'Use at your own risk. The author is not responsible for any damage '
-                'caused to your printer or any other device.',
-        'Need help': 'Open an issue on GitHub.',
-      },
-      logo: true);
+  Future<void> _aboutApp(BuildContext context) async {
+    final version = await AppInfoService.getVersion();
+    if (!context.mounted) return;
+    await _showDetails(
+        context,
+        'About'.tr(),
+        {
+          'Version': version,
+          'Build date': '2026-11-07',
+          'Author': 'Navaismo',
+          'Info': 'CacomixtlePad is an Android app for controlling the 3D printer '
+              'Ender 3 V3 SE and probably other printers with Marlin firmware.',
+          'Source code': 'https://github.com/navaismo/cacomixtlePad',
+          'Disclaimer':
+              'This app is not affiliated with Creality or any other company. '
+                  'Use at your own risk. The author is not responsible for any damage '
+                  'caused to your printer or any other device.',
+          'Need help': 'Open an issue on GitHub.',
+        },
+        logo: true);
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/temp_svc.dart';
 import '../services/material_presets.dart';
 import '../services/usb_connection_service.dart';
+import '../services/app_info_service.dart';
 import '../widgets/movement_controls.dart';
 import '../widgets/number_input_dialog.dart';
 import '../widgets/responsive_layout.dart';
@@ -100,12 +101,18 @@ class HomePage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Cacomixtle-Pad v1.1.1\nEnder 3 V3 SE',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 98, 185, 222))),
+              FutureBuilder<String>(
+                future: AppInfoService.getVersion(),
+                builder: (context, snapshot) {
+                  final version = snapshot.data ?? 'unknown';
+                  return Text('Cacomixtle-Pad v$version\nEnder 3 V3 SE',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 98, 185, 222)));
+                },
+              ),
               const SizedBox(height: 12),
               Text('API URL: $apiUrl\nSlicer URL: $slicerUrl',
                   textAlign: TextAlign.center,
