@@ -53,16 +53,19 @@ void main() {
     await until(() => printer.sent.length == 1);
     job.pause();
     printer.respond();
-    await Future<void>.delayed(Duration.zero);
-    expect(printer.sent, ['G1 X10']);
-    expect(job.paused, isTrue);
-    job.resume();
     await until(() => printer.sent.length == 2);
+    expect(printer.sent.last, 'M400');
+    expect(job.state, PrintState.pausing);
     printer.respond();
+    await until(() => job.paused);
+    expect(job.pauseMessage, 'Pause_parking_unavailable');
+    job.resume();
     await until(() => printer.sent.length == 3);
     printer.respond();
+    await until(() => printer.sent.length == 4);
+    printer.respond();
     await run;
-    expect(printer.sent, ['G1 X10', 'G1 X20', 'M400']);
+    expect(printer.sent, ['G1 X10', 'M400', 'G1 X20', 'M400']);
   });
 
   test('cancel stops file transmission and cools without moving the head',
@@ -100,6 +103,26 @@ void main() {
     await run;
     expect(job.state, PrintState.cancelled);
     expect(printer.sent.skip(3), ['M104 S0', 'M140 S0', 'M106 S0']);
+  });
+
+  test('pause during the completion barrier cannot report completion early',
+      () async {
+    final run = job.start(metadata);
+    for (var i = 1; i <= 2; i++) {
+      await until(() => printer.sent.length == i);
+      printer.respond();
+    }
+    await until(() => printer.sent.length == 3);
+    job.pause();
+    printer.respond();
+    await until(() => printer.sent.length == 4);
+    expect(printer.sent.last, 'M400');
+    printer.respond();
+    await until(() => job.paused);
+    expect(job.isActive, isTrue);
+    job.resume();
+    await run;
+    expect(job.state, PrintState.completed);
   });
 
   test('disconnect while paused fails the job and releases its file lock',

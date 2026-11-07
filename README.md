@@ -200,7 +200,7 @@ curl --location 'http://10.0.1.80:8888/uploads' \
 ## Hints
 
 - Printing continues when you navigate between screens inside CacomixtlePad. Return to **Print → Active print** to view its controls. The last job state is saved. After a process restart, an unfinished job appears as interrupted; it does not resume printer movements automatically.
-- Pause stops sending new G-code; movements already accepted by the printer can finish. Cancel waits for the in-flight command, disables the heaters and fan, and drains accepted movements without moving the head to a fixed position. Heating or probing already in progress can delay cancellation.
+- Pause drains accepted movements, lifts Z by up to 30 mm, and parks toward the rear (Y maximum minus 5 mm) within reported soft limits. Resume restores XY at the raised height, then Z and the original command modes before sending the next file line. If homing, position, limits, or clearance cannot be verified, we pause in place with a visible message. We temporarily hold the motors during pauses and restore the runtime idle timeout afterward. Cancel waits for the in-flight command, disables the heaters and fan, and drains accepted movements without moving the head to a fixed position. Heating or probing already in progress can delay cancellation. See [printing and mesh changes](docs/PRINTING_AND_MESH.md) for the prerequisites and hardware checks.
 - Uploads require the API key and are blocked during active jobs. Existing filenames return `409`; rename or delete the old file first. Limits are 256 MiB per file and 512 MiB per request.
 - Debug builds now communicate with real hardware too; automatic debug simulation has been removed.
 

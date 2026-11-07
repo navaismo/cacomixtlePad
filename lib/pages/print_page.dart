@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'print_job.dart';
 import '../services/print_job_service.dart';
 import '../services/gcode_repository.dart';
+import '../widgets/gcode_thumbnail.dart';
 
 class PrintPage extends StatefulWidget {
   const PrintPage({
@@ -171,7 +172,6 @@ class _PrintPageState extends State<PrintPage> {
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final file = gcodeFiles[index];
-                    final thumbnail = decodeThumbnail(file.thumbnailBase64);
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
@@ -185,14 +185,9 @@ class _PrintPageState extends State<PrintPage> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
-                                    child: thumbnail == null
-                                        ? const Icon(Icons.insert_drive_file,
-                                            size: 72)
-                                        : Image.memory(thumbnail,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) =>
-                                                const Icon(
-                                                    Icons.broken_image))),
+                                    child: GcodeThumbnail(
+                                        key: ValueKey(file.name),
+                                        base64: file.thumbnailBase64)),
                                 const SizedBox(height: 12),
                                 Text(file.name,
                                     maxLines: 2,

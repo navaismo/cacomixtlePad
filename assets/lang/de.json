@@ -93,5 +93,20 @@
     "Status_Interrupted": "Status: Unterbrochen",
     "Print_interrupted": "Der vorherige Druck wurde unterbrochen. Er wird nicht automatisch fortgesetzt.",
     "Print_history_unavailable": "Druckverlauf nicht verfügbar.",
-    "Last_print": "Letzter Druck"
+    "Last_print": "Letzter Druck",
+    "Status_Pausing": "Status: Parken",
+    "Status_Resuming": "Status: Rückkehr zum Druck",
+    "Pause_parking_unavailable": "An Ort und Stelle pausiert: Referenzfahrt, Position, Grenzen oder Z-Freiraum konnten nicht bestätigt werden.",
+    "Pause_lift_limited": "Mit weniger als 30 mm angehoben, um die Z-Grenze einzuhalten.",
+    "Pause_position_unverified": "Position konnte nicht bestätigt werden. Druck gestoppt.",
+    "Mesh_heatmap": "Höhenkarte",
+    "Mesh_surface": "3D-Oberfläche",
+    "Mesh_rear": "Hinten · Y+",
+    "Mesh_front": "Vorne · Y−",
+    "Mesh_select": "Tippe auf einen Punkt, um seine Höhe anzuzeigen.",
+    "Mesh_min": "Minimum",
+    "Mesh_max": "Maximum",
+    "Mesh_range": "Spannweite",
+    "Mesh_loading": "Bettnetz wird gelesen…",
+    "Mesh_probing": "Referenzfahrt und Bettvermessung…"
 }

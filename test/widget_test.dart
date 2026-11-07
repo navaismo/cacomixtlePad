@@ -13,6 +13,7 @@ import 'package:CacomixtlePad/services/print_job_service.dart';
 import 'package:CacomixtlePad/services/temp_svc.dart';
 import 'package:CacomixtlePad/services/usb_connection_service.dart';
 import 'support/fake_printer.dart';
+import 'thumbnail_test.dart' show thumbnailPng;
 
 class _Translations extends AssetLoader {
   final Map<String, dynamic> data;
@@ -108,6 +109,68 @@ void main() {
     expect(
         (await SharedPreferences.getInstance()).getDouble('hotend_PLA'), 225.0);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'print progress and temperature updates retain the decoded thumbnail',
+      (tester) async {
+    final directory = (await tester
+        .runAsync(() => Directory.systemTemp.createTemp('thumbnail-route-')))!;
+    final repository =
+        GcodeRepository(directory: directory, requestAccess: () async => true);
+    final printer = FakePrinter()..connected = false;
+    final temperature = TemperatureService(printer);
+    printer.connected = true;
+    final job = PrintJobService(printer, repository);
+    await tester.runAsync(
+        () => repository.file('part.gcode').writeAsString('M73 P25\nG1 X10\n'));
+    await mount(
+        tester,
+        const PrintJobPage(
+            filename: 'part.gcode',
+            thumbnailBase64: thumbnailPng,
+            totalLayers: 4,
+            totalTime: '1m'),
+        printer: printer,
+        repository: repository,
+        job: job,
+        temperature: temperature);
+    final imageFinder =
+        find.byWidgetPredicate((w) => w is Image && w.image is MemoryImage);
+    final provider = tester.widget<Image>(imageFinder).image;
+    Future<void>? run;
+    await tester.runAsync(() async {
+      run = job.start(const GcodeMetadata(
+          name: 'part.gcode', totalLayers: 4, estimatedTime: '1m'));
+      await until(() => printer.sent.length == 1);
+    });
+    printer.respond();
+    await tester.pump();
+    await tester.runAsync(() => until(() => printer.sent.length == 2));
+    expect(job.progress, 25);
+    expect(tester.widget<Image>(imageFinder).image, same(provider));
+    temperature.hotendTemp = '205.0';
+    temperature.notifyListeners();
+    await tester.pump();
+    expect(tester.widget<Image>(imageFinder).image, same(provider));
+    await tester.runAsync(() async {
+      printer.respond();
+      await until(() => printer.sent.length == 3).catchError((Object error) {
+        throw StateError(
+            'Completion barrier: $error; sent=${printer.sent}; state=${job.state}; error=${job.error}');
+      });
+      printer.respond();
+      await run;
+    });
+    await tester.pumpAndSettle();
+    expect(tester.widget<Image>(imageFinder).image, same(provider));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    job.dispose();
+    temperature.dispose();
+    printer.dispose();
+    repository.dispose();
+    await tester.runAsync(() => directory.delete(recursive: true));
   });
 
   testWidgets(

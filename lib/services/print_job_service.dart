@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'gcode_repository.dart';
 import 'usb_connection_service.dart';
 import 'print_job_store.dart';
+import 'pause_parking.dart';
 
 enum PrintState {
   idle,
   loading,
   printing,
+  pausing,
   paused,
+  resuming,
   cancelling,
   completed,
   cancelled,
@@ -27,6 +30,10 @@ class PrintJobService extends ChangeNotifier {
   PrintState state = PrintState.idle;
   GcodeMetadata? metadata;
   String? error;
+  String? pauseMessage;
+  bool _pauseRequested = false;
+  ParkSnapshot? _parkSnapshot;
+  double? _savedStepperIdleSeconds;
   int currentLayer = 0;
   double progress = 0;
   Duration elapsed = Duration.zero;
@@ -87,7 +94,9 @@ class PrintJobService extends ChangeNotifier {
       if ({
         PrintState.loading,
         PrintState.printing,
+        PrintState.pausing,
         PrintState.paused,
+        PrintState.resuming,
         PrintState.cancelling
       }.contains(state)) {
         state = PrintState.interrupted;
@@ -144,7 +153,9 @@ class PrintJobService extends ChangeNotifier {
       {
         PrintState.loading,
         PrintState.printing,
+        PrintState.pausing,
         PrintState.paused,
+        PrintState.resuming,
         PrintState.cancelling
       }.contains(state) ||
       repository.locked;
@@ -152,7 +163,9 @@ class PrintJobService extends ChangeNotifier {
   bool get canCancel => {
         PrintState.loading,
         PrintState.printing,
+        PrintState.pausing,
         PrintState.paused,
+        PrintState.resuming,
       }.contains(state);
   String get currentTime => remainingMinutes != null
       ? '${remainingMinutes}m'
@@ -176,6 +189,9 @@ class PrintJobService extends ChangeNotifier {
     }
     metadata = file;
     error = null;
+    pauseMessage = null;
+    _pauseRequested = false;
+    _parkSnapshot = null;
     currentLayer = 0;
     progress = 0;
     elapsed = Duration.zero;
@@ -260,6 +276,7 @@ class PrintJobService extends ChangeNotifier {
       }
       // ACK of the last file line only means it was accepted. M400 drains moves.
       await connection.execute('M400', fromPrint: true);
+      await _waitIfPaused();
       // Cancellation can be requested while the completion barrier is pending.
       if (_cancelRequested && state != PrintState.cancelling) {
         state = PrintState.cancelling;
@@ -269,8 +286,9 @@ class PrintJobService extends ChangeNotifier {
       if (!_cancelRequested) progress = 100;
     } catch (failure) {
       error = failure is StateError &&
-              failure.message == 'Print_history_unavailable'
-          ? 'Print_history_unavailable'
+              {'Print_history_unavailable', 'Pause_position_unverified'}
+                  .contains(failure.message)
+          ? failure.message.toString()
           : failure.toString();
       state = PrintState.failed;
       if (sentCommands && connection.isConnected && !_disposed) {
@@ -283,7 +301,17 @@ class PrintJobService extends ChangeNotifier {
       _timer?.cancel();
       _clock.stop();
       elapsed = _clock.elapsed;
+      try {
+        await _restoreStepperTimeout();
+      } catch (failure) {
+        state = PrintState.failed;
+        error = failure.toString();
+      }
       await _persistQuietly();
+      _pauseRequested = false;
+      _parkSnapshot = null;
+      connection.pauseMotionActive = false;
+      _releasePause();
       repository.locked = connection.printActive = false;
       _notify();
     }
@@ -295,27 +323,128 @@ class PrintJobService extends ChangeNotifier {
     }
   }
 
+  bool get _stopping => _cancelRequested || _disposed;
+
+  Future<List<String>> _pauseCommand(String command) =>
+      connection.execute(command, fromPrint: true);
+
+  Future<void> _park() async {
+    // Accepted moves may still be in the planner when their ACK arrives.
+    await _pauseCommand('M400');
+    if (_stopping) return;
+    pauseMessage = 'Pause_parking_unavailable';
+    final idleSeconds = connection.motionState.stepperIdleSeconds;
+    if (idleSeconds == null) return;
+    _savedStepperIdleSeconds = idleSeconds;
+    // Hold the axes throughout the pause, including pauses without parking.
+    await _pauseCommand('M84 S0');
+    if (_stopping || !connection.motionState.canPark) return;
+    final position =
+        FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+    if (_stopping) return;
+    final limits = TravelLimits.parse((await _pauseCommand('M211')).join('\n'));
+    if (_stopping || position == null || limits == null) return;
+    final snapshot =
+        ParkSnapshot.create(connection.motionState, position, limits);
+    if (snapshot == null) return;
+    _parkSnapshot = snapshot;
+    for (final command in snapshot.parkCommands) {
+      if (_stopping) return;
+      await _pauseCommand(command);
+    }
+    if (_stopping) return;
+    final parked =
+        FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+    if (_stopping) return;
+    if (parked == null || !parked.closeTo(snapshot.parked)) {
+      throw StateError('Pause_position_unverified');
+    }
+    pauseMessage = snapshot.limitedLift ? 'Pause_lift_limited' : null;
+  }
+
+  Future<void> _restoreStepperTimeout() async {
+    final seconds = _savedStepperIdleSeconds;
+    _savedStepperIdleSeconds = null;
+    if (seconds != null && connection.isConnected && !_disposed) {
+      await _pauseCommand('M84 S$seconds');
+    }
+  }
+
+  Future<void> _unpark() async {
+    final snapshot = _parkSnapshot;
+    if (snapshot == null) return;
+    final position =
+        FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+    if (_stopping) return;
+    final limits = TravelLimits.parse((await _pauseCommand('M211')).join('\n'));
+    if (_stopping) return;
+    if (position == null ||
+        !position.closeTo(snapshot.parked) ||
+        limits == null ||
+        !limits.contains(snapshot.original) ||
+        !limits.contains(snapshot.parked)) {
+      throw StateError('Pause_position_unverified');
+    }
+    for (final command in snapshot.restoreCommands) {
+      if (_stopping) return;
+      await _pauseCommand(command);
+    }
+    if (_stopping) return;
+    final restored =
+        FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+    if (_stopping) return;
+    if (restored == null || !restored.closeTo(snapshot.original)) {
+      throw StateError('Pause_position_unverified');
+    }
+    for (final command in snapshot.restoreModes) {
+      if (_stopping) return;
+      await _pauseCommand(command);
+    }
+  }
+
   Future<void> _waitIfPaused() async {
     if (!connection.isConnected) throw StateError('USB disconnected');
-    if (paused && !_cancelRequested) {
-      _resume ??= Completer<void>();
-      await _resume!.future;
+    if (_pauseRequested && !_stopping) {
+      final resumed = _resume!.future;
+      await _park();
+      if (_stopping) return;
+      state = PrintState.paused;
+      _clock.stop();
+      elapsed = _clock.elapsed;
+      _persistQuietly();
+      _notify();
+      await resumed;
+      if (!connection.isConnected) throw StateError('USB disconnected');
+      if (_stopping) return;
+      await _unpark();
+      if (_stopping) return;
+      await _restoreStepperTimeout();
+      if (_stopping) return;
+      _pauseRequested = false;
+      _parkSnapshot = null;
+      connection.pauseMotionActive = false;
+      pauseMessage = null;
+      state = PrintState.printing;
+      _clock.start();
+      _persistQuietly();
+      _notify();
     }
     if (!connection.isConnected) throw StateError('USB disconnected');
   }
 
   void pause() {
     if (state != PrintState.printing) return;
-    state = PrintState.paused;
-    _clock.stop();
+    _pauseRequested = true;
+    _resume = Completer<void>();
+    connection.pauseMotionActive = true;
+    state = PrintState.pausing;
     _persistQuietly();
     _notify();
   }
 
   void resume() {
     if (!paused) return;
-    state = PrintState.printing;
-    _clock.start();
+    state = PrintState.resuming;
     _releasePause();
     _persistQuietly();
     _notify();

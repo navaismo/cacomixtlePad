@@ -28,7 +28,10 @@ class FakePrinter extends UsbConnectionService {
   Stream<String> get lines => protocol.lines;
   @override
   Future<List<String>> execute(String command, {bool fromPrint = false}) =>
-      protocol.send(command);
+      protocol.send(command).then((response) {
+        motionState.acknowledge(command);
+        return response;
+      });
   void respond([String text = 'ok\n']) => input.add(utf8.encode(text));
   void detach() {
     connected = false;

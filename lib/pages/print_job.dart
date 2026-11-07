@@ -6,6 +6,7 @@ import '../services/gcode_repository.dart';
 import '../services/usb_connection_service.dart';
 import '../services/temp_svc.dart';
 import '../widgets/number_input_dialog.dart';
+import '../widgets/gcode_thumbnail.dart';
 import '../widgets/responsive_layout.dart';
 
 class PrintJobPage extends StatefulWidget {
@@ -77,13 +78,14 @@ class _PrintJobPageState extends State<PrintJobPage> {
     final progress = selected ? job.progress : 0.0;
     final currentLayer = selected ? job.currentLayer : 0;
     final currentTime = selected ? job.currentTime : '0:00';
-    final thumbnail = decodeThumbnail(widget.thumbnailBase64);
     final status = selected
         ? {
             PrintState.idle: 'Status_Idle',
             PrintState.loading: 'Status_Loading',
             PrintState.printing: 'Status_Printing',
+            PrintState.pausing: 'Status_Pausing',
             PrintState.paused: 'Status_Paused',
+            PrintState.resuming: 'Status_Resuming',
             PrintState.cancelling: 'Status_Cancelling',
             PrintState.completed: 'Print_Finished',
             PrintState.cancelled: 'Status_Cancelled',
@@ -112,14 +114,13 @@ class _PrintJobPageState extends State<PrintJobPage> {
                     style: const TextStyle(
                         fontSize: 24,
                         color: Color.fromARGB(255, 123, 214, 223))),
-                if (thumbnail != null)
+                if (widget.thumbnailBase64 != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Image.memory(thumbnail,
-                        height: 140,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image)),
+                    child: GcodeThumbnail(
+                        key: ValueKey(widget.filename),
+                        base64: widget.thumbnailBase64,
+                        height: 140),
                   ),
                 const SizedBox(height: 8),
                 Text(widget.filename,
@@ -132,6 +133,13 @@ class _PrintJobPageState extends State<PrintJobPage> {
                     style: const TextStyle(
                         fontSize: 18,
                         color: Color.fromARGB(179, 130, 236, 164))),
+                if (selected && job.pauseMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(job.pauseMessage!.tr(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.amber)),
+                  ),
                 if (selected && job.error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -183,6 +191,7 @@ class _PrintJobPageState extends State<PrintJobPage> {
             ControlCard(
                 icon: const Icon(Icons.vertical_align_center, size: 32),
                 label: 'Z_Offset'.tr(),
+                enabled: !usb.pauseMotionActive,
                 onTap: () => _setValue(
                     title: 'Set_Z_Offset'.tr(),
                     hint: 'ex_string'.tr(),

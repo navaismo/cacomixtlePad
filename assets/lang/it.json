@@ -93,5 +93,20 @@
     "Status_Interrupted": "Stato: Interrotta",
     "Print_interrupted": "La stampa precedente è stata interrotta. Non riprenderà automaticamente.",
     "Print_history_unavailable": "Cronologia di stampa non disponibile.",
-    "Last_print": "Ultima stampa"
+    "Last_print": "Ultima stampa",
+    "Status_Pausing": "Stato: Parcheggio",
+    "Status_Resuming": "Stato: Ritorno alla stampa",
+    "Pause_parking_unavailable": "Pausa sul posto: homing, posizione, limiti o spazio Z non verificati.",
+    "Pause_lift_limited": "Sollevamento inferiore a 30 mm per rispettare il limite Z.",
+    "Pause_position_unverified": "Posizione non verificata. Stampa arrestata.",
+    "Mesh_heatmap": "Mappa delle altezze",
+    "Mesh_surface": "Superficie 3D",
+    "Mesh_rear": "Retro · Y+",
+    "Mesh_front": "Fronte · Y−",
+    "Mesh_select": "Tocca un punto per vedere la sua altezza.",
+    "Mesh_min": "Minimo",
+    "Mesh_max": "Massimo",
+    "Mesh_range": "Intervallo",
+    "Mesh_loading": "Lettura della griglia del piano…",
+    "Mesh_probing": "Homing e sondaggio del piano…"
 }

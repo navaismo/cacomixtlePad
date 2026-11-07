@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,6 +16,8 @@ import 'package:CacomixtlePad/services/print_job_service.dart';
 import 'package:CacomixtlePad/services/temp_svc.dart';
 import 'package:CacomixtlePad/services/usb_connection_service.dart';
 import 'package:CacomixtlePad/widgets/number_input_dialog.dart';
+import 'package:CacomixtlePad/widgets/bed_mesh.dart';
+import 'package:CacomixtlePad/widgets/responsive_layout.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,13 +49,28 @@ class _Printer extends FakePrinter {
   _Printer() {
     connected = false;
   }
+  int gridReads = 0;
+  int probes = 0;
+  Completer<Map<GridPoint, double>>? gridGate;
+  Completer<bool>? probeGate;
+  Map<GridPoint, double> gridValues = {
+    GridPoint(0, 0): -0.1,
+    GridPoint(1, 0): 0.2,
+    GridPoint(0, 1): 0.05,
+    GridPoint(1, 1): 0.1,
+  };
   @override
-  Future<Map<GridPoint, double>> getBLGrid(BuildContext context) async => {
-        GridPoint(0, 0): -0.1,
-        GridPoint(1, 0): 0.2,
-        GridPoint(0, 1): 0.05,
-        GridPoint(1, 1): 0.1,
-      };
+  Future<Map<GridPoint, double>> getBLGrid(BuildContext context) async {
+    gridReads++;
+    return gridGate?.future ?? Future.value(gridValues);
+  }
+
+  @override
+  Future<bool> startBL(BuildContext context) async {
+    probes++;
+    return probeGate?.future ?? Future.value(true);
+  }
+
   @override
   Future<Map<String, String?>> getFWInfo(BuildContext context) async => {
         'Source_Code': 'https://example.test/very/long/firmware/source/path',
@@ -178,6 +196,95 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  testWidgets(
+      'mesh points show their measured value and both views remain reachable',
+      (tester) async {
+    await mount(tester, const BedLevelPage());
+    final point = find.byKey(const ValueKey('mesh-0-0'));
+    await tester.ensureVisible(point);
+    await tester.tap(point);
+    await tester.pumpAndSettle();
+    expect(find.text('X0 · Y0 · -0.100 mm'), findsOneWidget);
+    expect(tester.getTopLeft(find.byKey(const ValueKey('mesh-0-1'))).dy,
+        lessThan(tester.getTopLeft(point).dy));
+    await tester.ensureVisible(find.text('3D surface'));
+    await tester.tap(find.text('3D surface'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('mesh-selection')), findsNothing);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
+    expect(find.text('+0.300 mm'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'a failed refresh preserves the mesh and blocks duplicate requests',
+      (tester) async {
+    printer.connected = true;
+    await mount(tester, const BedLevelPage());
+    printer.gridGate = Completer();
+    await tester.pump();
+    await tester.tap(find.text('3D surface'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Get Grid'));
+    await tester.tap(find.text('Get Grid'));
+    await tester.pump();
+    expect(printer.gridReads, 2);
+    expect(printer.probes, 0);
+    final controls = tester.widgetList<ControlCard>(find.byType(ControlCard));
+    expect(controls.every((control) => !control.enabled), isTrue);
+    printer.gridGate!.complete({});
+    await tester.pumpAndSettle();
+    expect(find.byType(BedMesh), findsOneWidget);
+    expect(find.text('Bed Leveling Failed'), findsOneWidget);
+    printer.gridGate = null;
+    await tester.ensureVisible(find.text('Retry'));
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(printer.gridReads, 3);
+    expect(find.text('Bed Leveling Failed'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'probing keeps controls disabled until the refreshed mesh is read',
+      (tester) async {
+    printer.connected = true;
+    await mount(tester, const BedLevelPage());
+    printer.probeGate = Completer();
+    await tester.tap(find.text('3D surface'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Start a New Bed Level'));
+    await tester.tap(find.text('Start a New Bed Level'));
+    await tester.pump();
+    expect(printer.probes, 1);
+    expect(
+        tester
+            .widgetList<ControlCard>(find.byType(ControlCard))
+            .every((c) => !c.enabled),
+        isTrue);
+    printer.gridGate = Completer();
+    printer.probeGate!.complete(true);
+    await tester.pump();
+    expect(printer.gridReads, 2);
+    expect(
+        tester
+            .widgetList<ControlCard>(find.byType(ControlCard))
+            .every((c) => !c.enabled),
+        isTrue);
+    printer.gridGate!.complete({
+      GridPoint(0, 0): 0,
+      GridPoint(1, 0): 0,
+      GridPoint(0, 1): 0,
+      GridPoint(1, 1): 0
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('0.000 mm'), findsNWidgets(3));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('numeric form actions stay above the landscape keyboard',
       (tester) async {

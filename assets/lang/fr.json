@@ -93,5 +93,20 @@
     "Status_Interrupted": "État : Interrompue",
     "Print_interrupted": "L’impression précédente a été interrompue. Elle ne reprendra pas automatiquement.",
     "Print_history_unavailable": "Historique d’impression indisponible.",
-    "Last_print": "Dernière impression"
+    "Last_print": "Dernière impression",
+    "Status_Pausing": "État : Stationnement",
+    "Status_Resuming": "État : Retour à l’impression",
+    "Pause_parking_unavailable": "Pause sur place : référencement, position, limites ou dégagement Z non vérifiés.",
+    "Pause_lift_limited": "Tête relevée de moins de 30 mm pour respecter la limite Z.",
+    "Pause_position_unverified": "Position non vérifiée. Impression arrêtée.",
+    "Mesh_heatmap": "Carte des hauteurs",
+    "Mesh_surface": "Surface 3D",
+    "Mesh_rear": "Arrière · Y+",
+    "Mesh_front": "Avant · Y−",
+    "Mesh_select": "Touchez un point pour voir sa hauteur.",
+    "Mesh_min": "Minimum",
+    "Mesh_max": "Maximum",
+    "Mesh_range": "Écart",
+    "Mesh_loading": "Lecture du maillage du plateau…",
+    "Mesh_probing": "Référencement et palpage du plateau…"
 }

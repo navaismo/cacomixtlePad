@@ -83,6 +83,31 @@ void main() {
     expect(printer.sent, isEmpty);
   });
 
+  for (final state in ['pausing', 'paused', 'resuming']) {
+    test('restoring $state cannot authorize any physical return', () async {
+      await job.ready;
+      job.dispose();
+      store.saved = {
+        'schema': 1,
+        'filename': metadata.name,
+        'state': state,
+        'totalLayers': 2,
+        'totalTime': '1m',
+        'currentLayer': 0,
+        'progress': 10,
+        'elapsedMilliseconds': 1000,
+        'remainingMinutes': null,
+        'error': null,
+      };
+      job = PrintJobService(printer, repository, store: store);
+      await job.ready;
+      job.resume();
+      expect(job.state, PrintState.interrupted);
+      expect(printer.sent, isEmpty);
+      expect(job.isActive, isFalse);
+    });
+  }
+
   test('history write failure refuses to start and releases file lock',
       () async {
     store.failWrites = true;

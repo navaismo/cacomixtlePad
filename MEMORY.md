@@ -1,7 +1,8 @@
 # CacomixtlePad memory
 
 We started this memory on 2026-11-07 at `9f7a9e1` and updated it with two rounds
-of fixes that day. We have not committed the changes yet.
+of fixes that day. The fixes, security review, and responsive UI work are now
+committed in `a05dc87`. Our later printing and mesh changes are local.
 The [initial analysis](docs/REPO_ANALYSIS.md) is historical; the current status
 and validation of the fixes are in the reports for the
 [first round](docs/FIXES_2026-11-07.md) and
@@ -44,23 +45,24 @@ shared decisions and work.
 | `lib/services/usb_connection_service.dart` | USB 115200/8N1, handshake, queries, and validation of manual commands during printing. Replaces `usbConn_svc.dart`. |
 | `lib/services/temp_svc.dart` | Temperatures/fan, one subscription, and at most one pending `M105` poll. |
 | `lib/services/print_job_service.dart` | Shared job outside navigation routes, streaming reads, pause/cancel, and print states. |
+| `lib/services/pause_parking.dart` | ACK-based command modes, homing/idle timeout, position/soft-limit parsing, and parking targets. |
 | `lib/services/print_job_store.dart` | Versioned last-job record in SharedPreferences, restored as interrupted if previously active. |
 | `lib/services/gcode_repository.dart` | Directory, permissions, metadata, thumbnails, import/upload, deletion, and write locking. |
 | `lib/services/upload_api.dart` | Shelf handler with upload authentication and partial OctoPrint compatibility. |
 | `lib/services/material_presets.dart` | Defaults and validated reading of saved presets. |
 | `lib/pages/` | Home, library, job, preparation, extrusion, mesh, settings, and preset screens. |
-| `lib/widgets/` | Responsive page layouts, control cards, movement controls, and a keyboard-aware numeric form. |
+| `lib/widgets/` | Responsive page layouts, control cards, movement controls, a keyboard-aware numeric form, stable thumbnails, and a selectable bed mesh. |
 
 We will share these services between the APK and the future web interface.
 Avoid adding another serial sender or a second source of print state.
 
 ## Contracts and behavior
 
-- USB: first available device, 115200/8N1, and DTR/RTS. We wait for startup, initialize numbering with `M110 N0`, and confirm `M105` before announcing a connection. Debug builds use real hardware; there is no automatic simulation.
+- USB: first available device, 115200/8N1, and DTR/RTS. We wait for startup, initialize numbering with `M110 N0`, confirm `M105`, and initialize `G21`, `G90`, `M82`, and `M84 S120` before announcing a connection. The runtime motor timeout starts at 120 seconds; we do not write EEPROM. Debug builds use real hardware; there is no automatic simulation.
 - Every command passes through the FIFO with a line number and checksum on Android. The transport owns numbering: external `M110` commands and files supplying their own numbers are rejected. Unnumbered mode remains available for tests. `ok` is recognized as a complete line; `busy`/temperature responses renew the inactivity timeout (10 s), with an absolute limit of 30 min per command.
 - `Resend` for the pending line allows up to three identical retries; its transport ACK does not advance the print. Requests for acknowledged lines, unrecoverable errors, resets, write failures, or disconnections invalidate the session. Reconnect after these failures.
-- During a job, manual temperature, fan, Z offset, and query controls remain available; movement, motors, and other operations are blocked.
-- Pause stops new lines while accepted movements finish. Cancel waits for the current command, turns off the hotend/bed/fan, and drains movements with `M400`. It no longer makes an absolute move to Z15. Heating/probing in progress can delay cancellation.
+- During a job, manual temperature, fan, Z offset, and query controls remain available; movement, motors, and other operations are blocked. Z offset changes are also blocked during parking, pause, and return.
+- Pause drains accepted moves, holds motors with `M84 S0`, verifies acknowledged homing, modes, `M114` position and enabled `M211` limits, then lifts Z up to 30 mm and parks toward Y maximum minus 5 mm. Less than 5 mm Z clearance or unavailable preflight data leaves a visible pause in place. Resume checks the reported position and limits, returns XY while elevated and then Z, verifies the return, and restores units, axes/extrusion modes and the previous runtime motor timeout before the next file line. A mismatched position fails the job; snapshots are never persisted. See [printing and mesh](docs/PRINTING_AND_MESH.md). Cancel waits for the current command, turns off the hotend/bed/fan, and drains movements with `M400`. It no longer makes an absolute move to Z15. Heating/probing in progress can delay cancellation.
 - Completion requires the last ACK and the `M400` ACK. State and errors remain visible. From the library, “Active print” opens its controls and “Last print” shows the previous or interrupted result.
 - The record is saved before the first send, every five seconds, and on pause/resume/cancel/completion. Writes are serialized; the record excludes thumbnails and does not allow resuming from an offset. Failure of the first save prevents the job from starting.
 - Directory: `/storage/emulated/0/Download/gcode_files`. Classic storage permissions through Android 29; all-files access from Android 30. `MainActivity` exposes the SDK level through a MethodChannel to select the permission.
@@ -70,7 +72,7 @@ Avoid adding another serial sender or a second source of print state.
 - Shelf listens on port 8888 at the Wi-Fi IP, or `0.0.0.0` if unavailable. It closes when the root is unmounted. It does not yet provide a control dashboard or video.
 - Orca/Cura metadata, the largest-area Base64 thumbnail, and progress from `M73` or layer comments are supported. Files are read as streams.
 - Presets: `hotend_<material>` / `bed_<material>` keys, PLA/PETG/TPU/ABS materials; PLA bed temperature is 60 °C in both flows.
-- Languages: en/es/ru/fr/de/it/pt, with 95 keys in each JSON. The persisted selection is no longer forced to English at startup.
+- Languages: en/es/ru/fr/de/it/pt, with 110 keys in each JSON. The persisted selection is no longer forced to English at startup.
 
 ## Environment and checks
 
@@ -148,9 +150,41 @@ its open findings still need remediation.
 Static analysis is clean, translations remain aligned, and we rebuilt the
 debug APK at `build/app/outputs/flutter-apk/app-debug.apk` successfully.
 
+## Printing and mesh update
+
+We fixed repeated thumbnail decoding during library, progress, and temperature
+rebuilds. `GcodeThumbnail` retains its `MemoryImage` until the payload changes,
+uses gapless playback, and isolates repainting.
+
+We added `pausing` and `resuming` states. Parking/return runs in the print service
+at ACK boundaries; Resume remains disabled until parking finishes. Cancel can
+interrupt either transition after the pending ACK. Motion uses `G0` without E/F
+to preserve the extruder coordinate and modal feedrate. We restore the idle
+timeout on normal resume and connected-job cleanup, including cancellation and
+failure. A reconnect explicitly sets the 120-second session default again.
+`M18/M84 S…` changes the tracked timeout without invalidating homing. Commands
+that disable motors invalidate homing. A recovered transition is interrupted,
+with no physical return authorized.
+
+The mesh now defaults to a selectable height map with a zero-centered blue/coral
+legend and minimum/maximum/range summaries. We retain a 3D surface view. Mesh
+indices are not millimeter coordinates; Y increases toward the top/rear. Dense
+meshes scroll horizontally. Refresh errors preserve the previous valid mesh;
+refresh and probing stay disabled throughout the whole operation.
+
+All 115 tests pass with simulated transport. We checked thumbnail frame/provider
+stability, print page updates, parking/return modes and ordering, cancellation,
+disconnection, travel bounds, interrupted history, and the responsive mesh UI.
+All seven translations have 110 keys. Static analysis and diff checks are clean,
+and we rebuilt the debug APK at `build/app/outputs/flutter-apk/app-debug.apk`.
+We inspected rendered 4 × 4 mesh previews.
+See [PRINTING_AND_MESH.md](docs/PRINTING_AND_MESH.md) for firmware references and
+pending hardware checks. `M114` is a logical report, not a physical position
+sensor: do not move the head or release motors during a pause.
+
 ## Outstanding work
 
-- We still need to validate with the phone and printer and test uploads from Orca/Cura; so far, our tests have used simulated transport.
+- We still need to validate with the phone and printer and test uploads from Orca/Cura; so far, our tests have used simulated transport. For parking, first check cold movement above an empty bed, normal/limited Z lifts, a pause longer than two minutes, return order, cancellation, and disconnection. Process death leaves the firmware runtime timeout unchanged; reconnect or restart before another job.
 - Verify and back up your existing signing key and confirm its intended distribution identity. The audited local release already uses a different certificate from the old packaged APK.
 - Remediate the open findings in the security report and repeat the relevant checks before adding remote controls.
 - Let's run the workflow on GitHub when we push the changes.

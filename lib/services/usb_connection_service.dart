@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:usb_serial/usb_serial.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'gcode_protocol.dart';
+import 'pause_parking.dart';
 
 class GridPoint {
   final int x, y;
@@ -22,6 +23,8 @@ class UsbConnectionService extends ChangeNotifier {
   Future<void>? _closing;
   bool _disposed = false;
   bool printActive = false;
+  bool pauseMotionActive = false;
+  final motionState = PrinterModalState();
   Object? lastError;
 
   bool get isConnected =>
@@ -73,6 +76,11 @@ class UsbConnectionService extends ChangeNotifier {
       if (protocol == null) throw GcodeException('USB disconnected');
       await protocol.initializeNumbering();
       await protocol.send('M105');
+      // Establish modes and a known runtime idle timeout; reconnect need not reset firmware.
+      for (final command in ['G21', 'G90', 'M82', 'M84 S120']) {
+        await protocol.send(command);
+        motionState.acknowledge(command);
+      }
     } catch (error) {
       lastError = error;
       await _disconnect();
@@ -90,6 +98,7 @@ class UsbConnectionService extends ChangeNotifier {
     final port = _port;
     _protocol = null;
     _port = null;
+    motionState.reset();
     protocol?.close();
     if (!_disposed) notifyListeners();
     try {
@@ -104,13 +113,19 @@ class UsbConnectionService extends ChangeNotifier {
   Future<List<String>> execute(String command, {bool fromPrint = false}) {
     if (!isConnected) return Future.error(GcodeException('USB disconnected'));
     final code = command.trim().split(RegExp(r'\s+')).first.toUpperCase();
+    if (pauseMotionActive && !fromPrint && code == 'M851') {
+      return Future.error(GcodeException('Printer_busy'.tr()));
+    }
     if (printActive &&
         !fromPrint &&
         !{'M104', 'M105', 'M140', 'M106', 'M107', 'M851', 'M115', 'M78'}
             .contains(code)) {
       return Future.error(GcodeException('Printer_busy'.tr()));
     }
-    return _protocol!.send(command);
+    return _protocol!.send(command).then((response) {
+      motionState.acknowledge(command);
+      return response;
+    });
   }
 
   Future<void> sendGCode(String commands, BuildContext context) async {
