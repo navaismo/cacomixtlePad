@@ -121,7 +121,7 @@ class SettingsPage extends StatelessWidget {
       context,
       'About'.tr(),
       const {
-        'Version': '1.1.0',
+        'Version': '1.1.1',
         'Build date': '2025-05-23',
         'Author': 'Navaismo',
         'Info': 'CacomixtlePad is an Android app for controlling the 3D printer '

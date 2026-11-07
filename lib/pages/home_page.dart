@@ -100,7 +100,7 @@ class HomePage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Cacomixtle-Pad v1.1.0\nEnder 3 V3 SE',
+              const Text('Cacomixtle-Pad v1.1.1\nEnder 3 V3 SE',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontSize: 18,
