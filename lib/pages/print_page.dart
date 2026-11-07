@@ -94,6 +94,7 @@ class _PrintPageState extends State<PrintPage> {
     Navigator.push(
         context,
         MaterialPageRoute(
+            settings: const RouteSettings(name: PrintJobPage.routeName),
             builder: (_) => PrintJobPage(
                 filename: file.name,
                 thumbnailBase64: file.thumbnailBase64,
@@ -130,12 +131,10 @@ class _PrintPageState extends State<PrintPage> {
                           onPressed: _loading ? null : _loadGcodeFiles,
                           icon: const Icon(Icons.refresh),
                           tooltip: 'Retry'.tr()),
-                      if (job.metadata != null)
+                      if (job.metadata != null && !job.isActive)
                         TextButton(
                             onPressed: () => _open(job.metadata!),
-                            child: Text(
-                                (job.isActive ? 'Active_print' : 'Last_print')
-                                    .tr())),
+                            child: Text('Last_print'.tr())),
                     ],
                   ),
                   if (job.error != null && job.metadata == null)

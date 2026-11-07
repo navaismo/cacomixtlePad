@@ -97,6 +97,7 @@
     "Status_Pausing": "Status: Parking",
     "Status_Resuming": "Status: Returning to print",
     "Pause_parking_unavailable": "Paused in place: homing, position, limits or Z clearance could not be verified.",
+    "Cancel_parking_unavailable": "Print cancelled in place: homing, position, limits or Z clearance could not be verified.",
     "Pause_lift_limited": "Parked with less than 30 mm of lift to respect the Z limit.",
     "Pause_position_unverified": "Position could not be verified. Printing stopped.",
     "Mesh_heatmap": "Height map",

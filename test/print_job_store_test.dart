@@ -11,12 +11,14 @@ import 'support/fake_printer.dart';
 class _MemoryStore implements PrintJobStore {
   Map<String, dynamic>? saved;
   bool failWrites = false;
+  Completer<void>? initialGate;
   Completer<void>? terminalGate;
   @override
   Future<Map<String, dynamic>?> read() async => saved;
   @override
   Future<void> write(Map<String, dynamic> value) async {
     if (failWrites) throw StateError('disk full');
+    if (value['state'] == 'loading') await initialGate?.future;
     if (value['state'] == 'completed') await terminalGate?.future;
     saved = Map.of(value);
   }
@@ -116,6 +118,59 @@ void main() {
     expect(job.error, 'Print_history_unavailable');
     expect(printer.sent, isEmpty);
     expect(repository.locked, isFalse);
+  });
+
+  test('cancel before the first file command does not move the head', () async {
+    store.initialGate = Completer<void>();
+    for (final command in ['G21', 'G90', 'M82', 'G28', 'M84 S120']) {
+      printer.motionState.acknowledge(command);
+    }
+    final run = job.start(metadata);
+    await until(() => job.state == PrintState.loading);
+    final cancel = job.cancel();
+    store.initialGate!.complete();
+    for (var i = 1; i <= 4; i++) {
+      await until(() => printer.sent.length == i);
+      printer.respond();
+    }
+    await cancel;
+    await run;
+    expect(job.state, PrintState.cancelled);
+    expect(job.error, isNull);
+    expect(printer.sent, ['M104 S0', 'M140 S0', 'M106 S0', 'M400']);
+  });
+
+  test('cancel preserves the historical record but resets visible progress',
+      () async {
+    await repository.file(metadata.name).writeAsString('M73 P50 R3\nG1 X10\n');
+    final run = job.start(metadata);
+    await until(() => printer.sent.length == 1);
+    printer.respond();
+    await until(() => printer.sent.length == 2);
+    expect(job.progress, 50);
+    final cancel = job.cancel();
+    printer.respond();
+    for (var i = 3; i <= 6; i++) {
+      await until(() => printer.sent.length == i);
+      printer.respond();
+    }
+    await cancel;
+    await run;
+    expect(store.saved!['state'], 'cancelled');
+    expect(store.saved!['progress'], 50);
+    expect(store.saved!['error'], 'Cancel_parking_unavailable');
+    expect(job.progress, 0);
+    expect(job.currentLayer, 0);
+    expect(job.remainingMinutes, isNull);
+    expect(job.elapsed, Duration.zero);
+    job.dispose();
+    job = PrintJobService(printer, repository, store: store);
+    await job.ready;
+    expect(job.state, PrintState.cancelled);
+    expect(job.error, 'Cancel_parking_unavailable');
+    expect(job.progress, 0);
+    expect(job.currentTime, '0:00');
+    expect(job.metadata!.name, metadata.name);
   });
 
   test('cancel during terminal persistence cannot reopen a completed job',

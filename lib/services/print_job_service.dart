@@ -104,6 +104,7 @@ class PrintJobService extends ChangeNotifier {
       error = state == PrintState.interrupted
           ? 'Print_interrupted'
           : savedError as String?;
+      if (state == PrintState.cancelled) _resetCancelledProgress();
       _notify();
     } catch (_) {
       if (!_disposed) {
@@ -282,6 +283,7 @@ class PrintJobService extends ChangeNotifier {
         state = PrintState.cancelling;
       }
       if (_cancelRequested && !cooled) await _cooldown();
+      if (_cancelRequested && sentCommands) await _parkAfterCancel();
       state = _cancelRequested ? PrintState.cancelled : PrintState.completed;
       if (!_cancelRequested) progress = 100;
     } catch (failure) {
@@ -307,7 +309,14 @@ class PrintJobService extends ChangeNotifier {
         state = PrintState.failed;
         error = failure.toString();
       }
+      if (state == PrintState.cancelled &&
+          !connection.isConnected &&
+          !_disposed) {
+        state = PrintState.failed;
+        error = 'USB_is_not_connected';
+      }
       await _persistQuietly();
+      if (state == PrintState.cancelled) _resetCancelledProgress();
       _pauseRequested = false;
       _parkSnapshot = null;
       connection.pauseMotionActive = false;
@@ -315,6 +324,15 @@ class PrintJobService extends ChangeNotifier {
       repository.locked = connection.printActive = false;
       _notify();
     }
+  }
+
+  void _resetCancelledProgress() {
+    currentLayer = 0;
+    progress = 0;
+    elapsed = Duration.zero;
+    remainingMinutes = null;
+    pauseMessage = null;
+    _clock.reset();
   }
 
   Future<void> _cooldown() async {
@@ -327,6 +345,78 @@ class PrintJobService extends ChangeNotifier {
 
   Future<List<String>> _pauseCommand(String command) =>
       connection.execute(command, fromPrint: true);
+
+  Future<void> _parkAfterCancel() async {
+    error = 'Cancel_parking_unavailable';
+    final mode = connection.motionState;
+    final previous = _parkSnapshot;
+    ParkSnapshot? restore = previous;
+    try {
+      if (!connection.isConnected) throw StateError('USB disconnected');
+      final idleSeconds = mode.stepperIdleSeconds;
+      if (idleSeconds == null || !mode.canPark || _disposed) return;
+      _savedStepperIdleSeconds ??= idleSeconds;
+      await _pauseCommand('M84 S0');
+      final position =
+          FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+      final limits =
+          TravelLimits.parse((await _pauseCommand('M211')).join('\n'));
+      if (_disposed || position == null || limits == null) return;
+      final snapshot = previous ?? ParkSnapshot.create(mode, position, limits);
+      if (snapshot == null ||
+          !limits.contains(position) ||
+          !limits.contains(snapshot.parked)) {
+        return;
+      }
+
+      if (previous != null) {
+        final lifted = FirmwarePosition(snapshot.original.x,
+            snapshot.original.y, snapshot.parked.z, snapshot.original.e);
+        if (!position.closeTo(snapshot.original) &&
+            !position.closeTo(lifted) &&
+            !position.closeTo(snapshot.parked)) {
+          throw StateError('Pause_position_unverified');
+        }
+      }
+
+      final lift = snapshot.parked.z - position.z > 0.05;
+      final retreat = snapshot.parked.y - position.y > 0.05;
+      final target = FirmwarePosition(
+          position.x,
+          retreat ? snapshot.parked.y : position.y,
+          lift ? snapshot.parked.z : position.z,
+          position.e);
+      if (!limits.contains(target) || target.z - snapshot.original.z < 5) {
+        return;
+      }
+      if (lift || retreat) {
+        restore = snapshot;
+        for (final command in [
+          'G21',
+          'G90',
+          if (lift) 'G0 Z${target.z.toStringAsFixed(3)}',
+          if (retreat) 'G0 Y${target.y.toStringAsFixed(3)}',
+          'M400'
+        ]) {
+          if (_disposed) return;
+          await _pauseCommand(command);
+        }
+        if (_disposed) return;
+        final actual =
+            FirmwarePosition.parse((await _pauseCommand('M114')).join('\n'));
+        if (actual == null || !actual.closeTo(target)) {
+          throw StateError('Pause_position_unverified');
+        }
+      }
+      error = snapshot.limitedLift ? 'Pause_lift_limited' : null;
+    } finally {
+      if (restore != null && connection.isConnected && !_disposed) {
+        for (final command in restore.restoreModes) {
+          await _pauseCommand(command);
+        }
+      }
+    }
+  }
 
   Future<void> _park() async {
     // Accepted moves may still be in the planner when their ACK arrives.
@@ -453,6 +543,7 @@ class PrintJobService extends ChangeNotifier {
   Future<void> cancel() async {
     if (!canCancel) return;
     _cancelRequested = true;
+    connection.pauseMotionActive = true;
     state = PrintState.cancelling;
     _persistQuietly();
     _releasePause();

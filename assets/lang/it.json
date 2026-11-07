@@ -97,6 +97,7 @@
     "Status_Pausing": "Stato: Parcheggio",
     "Status_Resuming": "Stato: Ritorno alla stampa",
     "Pause_parking_unavailable": "Pausa sul posto: homing, posizione, limiti o spazio Z non verificati.",
+    "Cancel_parking_unavailable": "Stampa annullata sul posto: homing, posizione, limiti o spazio Z non verificati.",
     "Pause_lift_limited": "Sollevamento inferiore a 30 mm per rispettare il limite Z.",
     "Pause_position_unverified": "Posizione non verificata. Stampa arrestata.",
     "Mesh_heatmap": "Mappa delle altezze",

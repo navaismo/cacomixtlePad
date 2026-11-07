@@ -83,9 +83,10 @@ class FirmwarePosition {
   final double x, y, z, e;
   const FirmwarePosition(this.x, this.y, this.z, this.e);
 
-  static FirmwarePosition? parse(String report) {
+  static FirmwarePosition? parse(String report, {bool colonRequired = true}) {
+    final separator = colonRequired ? ':' : ':?';
     final match = RegExp(
-            '(?:^|\\s)X:\\s*$_number\\s+Y:\\s*$_number\\s+Z:\\s*$_number(?:\\s+E:\\s*$_number)?',
+            '(?:^|\\s)X$separator\\s*$_number\\s+Y$separator\\s*$_number\\s+Z$separator\\s*$_number(?:\\s+E$separator\\s*$_number)?',
             multiLine: true,
             caseSensitive: false)
         .firstMatch(report);
@@ -118,8 +119,8 @@ class TravelLimits {
     final max = RegExp(r'\bMax:\s*(.*)', caseSensitive: false, dotAll: true)
         .firstMatch(report);
     if (!on || min == null || max == null) return null;
-    final low = FirmwarePosition.parse(min.group(1)!);
-    final high = FirmwarePosition.parse(max.group(1)!);
+    final low = FirmwarePosition.parse(min.group(1)!, colonRequired: false);
+    final high = FirmwarePosition.parse(max.group(1)!, colonRequired: false);
     if (low == null ||
         high == null ||
         low.x >= high.x ||

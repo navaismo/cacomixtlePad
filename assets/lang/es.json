@@ -97,6 +97,7 @@
     "Status_Pausing": "Estado: Retirando cabezal",
     "Status_Resuming": "Estado: Regresando a la impresión",
     "Pause_parking_unavailable": "Pausa en posición: no se pudo verificar el homing, la posición, los límites o el espacio en Z.",
+    "Cancel_parking_unavailable": "Impresión cancelada en posición: no se pudo verificar el homing, la posición, los límites o el espacio en Z.",
     "Pause_lift_limited": "Cabezal retirado con menos de 30 mm de elevación para respetar el límite Z.",
     "Pause_position_unverified": "No se pudo verificar la posición. Impresión detenida.",
     "Mesh_heatmap": "Mapa de alturas",

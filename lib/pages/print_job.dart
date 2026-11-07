@@ -10,6 +10,7 @@ import '../widgets/gcode_thumbnail.dart';
 import '../widgets/responsive_layout.dart';
 
 class PrintJobPage extends StatefulWidget {
+  static const routeName = '/print-job';
   final String filename;
   final String? thumbnailBase64;
   final int totalLayers;

@@ -18,9 +18,44 @@ import 'services/upload_api.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'pages/prepare_page.dart';
 import 'pages/print_page.dart';
+import 'pages/print_job.dart';
 import 'pages/settings_page.dart';
 import 'services/temp_svc.dart';
 import 'services/usb_connection_service.dart';
+
+class _PrintRouteObserver extends NavigatorObserver {
+  final _routes = <Route<dynamic>>[];
+  bool get hasPrintJob =>
+      _routes.any((route) => route.settings.name == PrintJobPage.routeName);
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routes.add(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routes.remove(route);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routes.remove(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    if (oldRoute == null) return;
+    final index = _routes.indexOf(oldRoute);
+    if (index >= 0) {
+      if (newRoute == null) {
+        _routes.removeAt(index);
+      } else {
+        _routes[index] = newRoute;
+      }
+    }
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +109,10 @@ class PrinterApp extends StatefulWidget {
 
 class _PrinterAppState extends State<PrinterApp> {
   int _currentIndex = 0;
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  final _routes = _PrintRouteObserver();
+  PrintJobService? _job;
+  bool _wasCancelling = false;
   HttpServer? _server;
   String? localIp;
   String apiUrl = '';
@@ -86,8 +125,70 @@ class _PrinterAppState extends State<PrinterApp> {
 
   @override
   void dispose() {
+    _job?.removeListener(_onJobChanged);
     _server?.close(force: true);
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final job = context.read<PrintJobService>();
+    if (_job != job) {
+      _job?.removeListener(_onJobChanged);
+      _job = job;
+      _wasCancelling = false;
+      job.addListener(_onJobChanged);
+    }
+  }
+
+  void _onJobChanged() {
+    final job = _job!;
+    if (job.state == PrintState.cancelling) _wasCancelling = true;
+    if (_wasCancelling && job.state == PrintState.cancelled && !job.isActive) {
+      _wasCancelling = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || job.state != PrintState.cancelled) return;
+        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+        setState(() => _currentIndex = 0);
+        if (job.error != null) {
+          _messenger.currentState
+              ?.showSnackBar(SnackBar(content: Text(job.error!.tr())));
+        }
+      });
+    } else if (_wasCancelling &&
+        job.state == PrintState.failed &&
+        !job.isActive) {
+      _wasCancelling = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || job.state != PrintState.failed || job.error == null) {
+          return;
+        }
+        _messenger.currentState
+            ?.showSnackBar(SnackBar(content: Text(job.error!.tr())));
+      });
+    } else if (job.state == PrintState.completed && !job.isActive) {
+      _wasCancelling = false;
+    }
+  }
+
+  void _openActivePrint(GcodeMetadata metadata) {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) return;
+    if (_routes.hasPrintJob) {
+      navigator
+          .popUntil((route) => route.settings.name == PrintJobPage.routeName);
+      return;
+    }
+    navigator.push(MaterialPageRoute<void>(
+      settings: const RouteSettings(name: PrintJobPage.routeName),
+      builder: (_) => PrintJobPage(
+        filename: metadata.name,
+        thumbnailBase64: metadata.thumbnailBase64,
+        totalLayers: metadata.totalLayers,
+        totalTime: metadata.estimatedTime,
+      ),
+    ));
   }
 
   @override
@@ -159,6 +260,8 @@ class _PrinterAppState extends State<PrinterApp> {
     ];
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
+      navigatorObservers: [_routes],
       scaffoldMessengerKey: _messenger,
       locale: context.locale,
       supportedLocales: context.supportedLocales,
@@ -170,6 +273,32 @@ class _PrinterAppState extends State<PrinterApp> {
         filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(minimumSize: const Size(48, 48))),
       ),
+      builder: (context, child) => Column(children: [
+        Selector<PrintJobService, GcodeMetadata?>(
+          selector: (_, job) => job.isActive ? job.metadata : null,
+          builder: (context, metadata, _) => metadata == null
+              ? const SizedBox.shrink()
+              : SafeArea(
+                  bottom: false,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const ValueKey('active-print-button'),
+                      onPressed: () => _openActivePrint(metadata),
+                      icon: const Icon(Icons.print_rounded),
+                      label: Text('Active_print'.tr(),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                        textStyle: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        Expanded(child: child ?? const SizedBox.shrink()),
+      ]),
       home: Scaffold(
         body: SafeArea(
           child: LayoutBuilder(
@@ -216,6 +345,7 @@ class _PrinterAppState extends State<PrinterApp> {
           if (MediaQuery.viewInsetsOf(context).bottom > 0) {
             return const SizedBox.shrink();
           }
+
           return SafeArea(
             top: false,
             child: BottomNavigationBar(

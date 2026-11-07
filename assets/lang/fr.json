@@ -97,6 +97,7 @@
     "Status_Pausing": "État : Stationnement",
     "Status_Resuming": "État : Retour à l’impression",
     "Pause_parking_unavailable": "Pause sur place : référencement, position, limites ou dégagement Z non vérifiés.",
+    "Cancel_parking_unavailable": "Impression annulée sur place : référencement, position, limites ou dégagement Z non vérifiés.",
     "Pause_lift_limited": "Tête relevée de moins de 30 mm pour respecter la limite Z.",
     "Pause_position_unverified": "Position non vérifiée. Impression arrêtée.",
     "Mesh_heatmap": "Carte des hauteurs",

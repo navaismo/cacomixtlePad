@@ -35,7 +35,14 @@ class _Translations extends AssetLoader {
 }
 
 class _Repository extends GcodeRepository {
-  _Repository() : super(requestAccess: () async => false);
+  _Repository({super.directory}) : super(requestAccess: () async => true);
+  bool allowAccess = false;
+  @override
+  Future<void> ensureReady() async {
+    if (!allowAccess) throw StorageException(403, 'Permission_denied');
+    await super.ensureReady();
+  }
+
   @override
   Future<List<GcodeMetadata>> list() async => [
         const GcodeMetadata(
@@ -197,6 +204,173 @@ void main() {
     });
   }
 
+  testWidgets('active print stays visible across navigation and nested pages',
+      (tester) async {
+    job.metadata = const GcodeMetadata(
+        name: 'active.gcode', totalLayers: 1, estimatedTime: '1m');
+    job.state = PrintState.printing;
+    await mount(tester, const PrinterApp(),
+        shell: true, size: const Size(1024, 600));
+    final button = find.byKey(const ValueKey('active-print-button'));
+    expect(button, findsOneWidget);
+    expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+    for (final label in ['Print', 'Prepare', 'Settings', 'Home']) {
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+      expect(button.hitTestable(), findsOneWidget);
+    }
+    await tester.tap(find.text('Prepare').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Bed Level'));
+    await tester.tap(find.text('Bed Level'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BedLevelPage), findsOneWidget);
+    expect(button.hitTestable(), findsOneWidget);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byType(PrintJobPage), findsOneWidget);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byType(PrintJobPage), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('movement buttons resize within compact touchable bounds',
+      (tester) async {
+    final sizes = [const Size(320, 568), const Size(1024, 600)];
+    for (var i = 0; i < sizes.length; i++) {
+      await mount(tester, pages['home']!(), size: sizes[i]);
+      final up = find.byIcon(Icons.keyboard_arrow_up);
+      await tester.ensureVisible(up);
+      final control = find.ancestor(of: up, matching: find.byType(IconButton));
+      expect(tester.getSize(control), Size.square(i == 0 ? 50 : 64));
+      final button = tester.widget<IconButton>(control);
+      expect(button.style, isNull);
+      expect(control.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('active print remains reachable on a small screen with keyboard',
+      (tester) async {
+    job.metadata = const GcodeMetadata(
+        name: 'active.gcode', totalLayers: 1, estimatedTime: '1m');
+    job.state = PrintState.printing;
+    await mount(tester, const PrinterApp(),
+        shell: true, size: const Size(480, 240), scale: 1.8);
+    final button = find.byKey(const ValueKey('active-print-button'));
+    expect(button.hitTestable(), findsOneWidget);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 120);
+    await tester.pumpAndSettle();
+    expect(button.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('successful cancellation resets progress and returns home',
+      (tester) async {
+    final directory = (await tester.runAsync(
+        () => Directory.systemTemp.createTemp('cancel-navigation-')))!;
+    addTearDown(() => directory.delete(recursive: true));
+    job.dispose();
+    repository.dispose();
+    repository = _Repository(directory: directory);
+    job = PrintJobService(printer, repository);
+    await tester.runAsync(() =>
+        repository.file('active.gcode').writeAsString('M73 P50 R3\nG1 X10\n'));
+    await mount(tester, const PrinterApp(),
+        shell: true, size: const Size(1024, 600));
+    repository.allowAccess = true;
+    printer.connected = true;
+    Future<void>? run;
+    await tester.runAsync(() async {
+      run = job.start(const GcodeMetadata(
+          name: 'active.gcode', totalLayers: 10, estimatedTime: '3m'));
+      await until(() => printer.sent.length == 1);
+      printer.respond();
+      await until(() => printer.sent.length == 2);
+    });
+
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('active-print-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('50%'), findsOneWidget);
+    await tester.ensureVisible(find.text('Stop'));
+    await tester.tap(find.text('Stop'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK').last);
+    await tester.pump();
+    expect(job.state, PrintState.cancelling);
+    expect(find.byType(PrintJobPage), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsPage), findsOneWidget);
+    await tester.runAsync(() async {
+      printer.respond();
+      for (var i = 3; i <= 6; i++) {
+        await until(() => printer.sent.length == i);
+        printer.respond();
+      }
+      await run;
+    });
+    await tester.pumpAndSettle();
+    expect(job.state, PrintState.cancelled);
+    expect(job.progress, 0);
+    expect(job.currentTime, '0:00');
+    expect(find.byType(PrintJobPage), findsNothing);
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(
+        find.text(
+            'Print cancelled in place: homing, position, limits or Z clearance could not be verified.'),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('active-print-button')), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('failed cancellation keeps the error on the print screen',
+      (tester) async {
+    final directory = (await tester
+        .runAsync(() => Directory.systemTemp.createTemp('cancel-failure-')))!;
+    addTearDown(() => directory.delete(recursive: true));
+    job.dispose();
+    repository.dispose();
+    repository = _Repository(directory: directory);
+    job = PrintJobService(printer, repository);
+    await tester.runAsync(() =>
+        repository.file('active.gcode').writeAsString('G1 X10\nG1 X20\n'));
+    await mount(tester, const PrinterApp(),
+        shell: true, size: const Size(1024, 600));
+    repository.allowAccess = true;
+    printer.connected = true;
+    Future<void>? run;
+    await tester.runAsync(() async {
+      run = job.start(const GcodeMetadata(
+          name: 'active.gcode', totalLayers: 1, estimatedTime: '1m'));
+      await until(() => printer.sent.isNotEmpty);
+    });
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('active-print-button')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Stop'));
+    await tester.tap(find.text('Stop'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK').last);
+    await tester.pump();
+    printer.detach();
+    await tester.runAsync(() async => await run);
+    await tester.pumpAndSettle();
+    expect(job.state, PrintState.failed);
+    expect(job.error, isNotNull);
+    expect(find.byType(PrintJobPage), findsOneWidget);
+    expect(find.text('Status: Failed'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets(
       'mesh points show their measured value and both views remain reachable',
       (tester) async {
@@ -211,7 +385,7 @@ void main() {
     await tester.ensureVisible(find.text('3D surface'));
     await tester.tap(find.text('3D surface'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('mesh-selection')), findsNothing);
+    expect(find.byKey(const ValueKey('mesh-selection')), findsOneWidget);
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -700));
     await tester.pumpAndSettle();
     expect(find.text('+0.300 mm'), findsOneWidget);

@@ -97,6 +97,7 @@
     "Status_Pausing": "Status: Parken",
     "Status_Resuming": "Status: Rückkehr zum Druck",
     "Pause_parking_unavailable": "An Ort und Stelle pausiert: Referenzfahrt, Position, Grenzen oder Z-Freiraum konnten nicht bestätigt werden.",
+    "Cancel_parking_unavailable": "Druck an Ort und Stelle abgebrochen: Referenzfahrt, Position, Grenzen oder Z-Freiraum konnten nicht bestätigt werden.",
     "Pause_lift_limited": "Mit weniger als 30 mm angehoben, um die Z-Grenze einzuhalten.",
     "Pause_position_unverified": "Position konnte nicht bestätigt werden. Druck gestoppt.",
     "Mesh_heatmap": "Höhenkarte",

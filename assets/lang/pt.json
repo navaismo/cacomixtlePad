@@ -97,6 +97,7 @@
     "Status_Pausing": "Estado: Estacionando",
     "Status_Resuming": "Estado: Retornando à impressão",
     "Pause_parking_unavailable": "Pausa no local: homing, posição, limites ou espaço em Z não verificados.",
+    "Cancel_parking_unavailable": "Impressão cancelada no local: homing, posição, limites ou espaço em Z não verificados.",
     "Pause_lift_limited": "Elevação inferior a 30 mm para respeitar o limite Z.",
     "Pause_position_unverified": "Não foi possível verificar a posição. Impressão interrompida.",
     "Mesh_heatmap": "Mapa de alturas",

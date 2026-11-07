@@ -82,6 +82,11 @@ void main() {
     await cancel;
     await run;
     expect(job.state, PrintState.cancelled);
+    expect(job.progress, 0);
+    expect(job.currentLayer, 0);
+    expect(job.elapsed, Duration.zero);
+    expect(job.remainingMinutes, isNull);
+    expect(job.error, 'Cancel_parking_unavailable');
     expect(printer.sent, ['G1 X10', 'M104 S0', 'M140 S0', 'M106 S0', 'M400']);
   });
 

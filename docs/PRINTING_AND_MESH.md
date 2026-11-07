@@ -42,11 +42,21 @@ homing; commands that actually disable motors do.
 
 Parking and return use `G0` without `E` or `F`: we leave the extruder coordinate
 and modal feedrate untouched. Firmware movement speeds and axis limits apply.
-We temporarily block manual Z offset changes throughout pause and return.
-Cancel remains available during both transitions; it stops further parking or
-return commands after the pending ACK and performs the existing cooldown.
-We restore the motor timeout when ending a connected job, including cancellation
-or failure. A new connection establishes the defaults again after a disconnect.
+We temporarily block manual Z offset changes throughout pause, return, and
+cancellation. Cancel remains available during both transitions. After the pending
+ACK, we turn off the hotend, bed, and fan, drain accepted moves, and recheck
+homing, modes, position, enabled limits, and clearance before lifting and
+parking toward the rear. If cancellation interrupts parking or return, we check
+the reported position against the expected stages and finish parking without
+repeating an already completed lift or returning to the print. If no file command
+has been sent, cancellation does not initiate a parking move.
+
+If preflight is unavailable or less than 5 mm of lift is possible, cancellation
+finishes in place and shows a warning on Home. A limited lift also shows a
+warning. A mismatch or command failure instead fails the job and remains visible;
+it does not report successful cancellation. We restore command modes and the
+motor timeout when possible. A new connection establishes defaults after a
+disconnect.
 
 If preflight information is unavailable, we stay paused in place with a visible
 message. If a reported position differs after movement or before return, we
@@ -59,6 +69,11 @@ Do not move the head by hand or release the motors during a pause. We still
 need to validate stock firmware responses, clearances, long pauses, and the
 actual return path on your phone and printer. Process death cannot restore the
 previous runtime timeout; reconnect or restart the printer before another job.
+
+We also accept the installed firmware's reported `M211` bounds in
+`X-13.00 Y-15.00 Z0.00` form, without colons. All other parking checks remain
+in force. The reported format is covered by a simulated response; physical
+parking and return still need validation.
 
 Our choices follow Marlin's [M114 position reporting](https://marlinfw.org/docs/gcode/M114.html),
 [M211 soft limits](https://marlinfw.org/docs/gcode/M211.html), and
@@ -81,11 +96,15 @@ the page scrolls vertically. We keep the previous valid mesh when a refresh
 fails, expose Retry, and disable duplicate refresh/probe requests until both
 probing and the subsequent mesh read finish. We reject incomplete or nonfinite
 meshes instead of filling missing measurements with zero.
+The selected point and mesh summaries appear below the grid and probing controls
+on the right, or below them when the page stacks on narrow displays. Selecting a
+point currently only displays its value; it does not move the printer or change
+the mesh.
 
 ## Validation
 
-All 115 tests pass, static analysis is clean, and all seven languages have
-110 translation keys. We rebuilt `build/app/outputs/flutter-apk/app-debug.apk`
+All 136 tests pass, static analysis is clean, and all seven languages have
+111 translation keys. We rebuilt `build/app/outputs/flutter-apk/app-debug.apk`
 successfully and passed `git diff --check`.
 
 We use simulated USB transport for automated tests. The regression checks cover

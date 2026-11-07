@@ -62,8 +62,9 @@ Avoid adding another serial sender or a second source of print state.
 - Every command passes through the FIFO with a line number and checksum on Android. The transport owns numbering: external `M110` commands and files supplying their own numbers are rejected. Unnumbered mode remains available for tests. `ok` is recognized as a complete line; `busy`/temperature responses renew the inactivity timeout (10 s), with an absolute limit of 30 min per command.
 - `Resend` for the pending line allows up to three identical retries; its transport ACK does not advance the print. Requests for acknowledged lines, unrecoverable errors, resets, write failures, or disconnections invalidate the session. Reconnect after these failures.
 - During a job, manual temperature, fan, Z offset, and query controls remain available; movement, motors, and other operations are blocked. Z offset changes are also blocked during parking, pause, and return.
-- Pause drains accepted moves, holds motors with `M84 S0`, verifies acknowledged homing, modes, `M114` position and enabled `M211` limits, then lifts Z up to 30 mm and parks toward Y maximum minus 5 mm. Less than 5 mm Z clearance or unavailable preflight data leaves a visible pause in place. Resume checks the reported position and limits, returns XY while elevated and then Z, verifies the return, and restores units, axes/extrusion modes and the previous runtime motor timeout before the next file line. A mismatched position fails the job; snapshots are never persisted. See [printing and mesh](docs/PRINTING_AND_MESH.md). Cancel waits for the current command, turns off the hotend/bed/fan, and drains movements with `M400`. It no longer makes an absolute move to Z15. Heating/probing in progress can delay cancellation.
-- Completion requires the last ACK and the `M400` ACK. State and errors remain visible. From the library, “Active print” opens its controls and “Last print” shows the previous or interrupted result.
+- Pause drains accepted moves, holds motors with `M84 S0`, verifies acknowledged homing, modes, `M114` position and enabled `M211` limits, then lifts Z up to 30 mm and parks toward Y maximum minus 5 mm. Less than 5 mm Z clearance or unavailable preflight data leaves a visible pause in place. Resume checks the reported position and limits, returns XY while elevated and then Z, verifies the return, and restores units, axes/extrusion modes and the previous runtime motor timeout before the next file line. A mismatched position fails the job; snapshots are never persisted. See [printing and mesh](docs/PRINTING_AND_MESH.md). Cancel waits for the current command, turns off the hotend/bed/fan, drains movements with `M400`, and attempts the same verified lift and rear parking. It reconciles interrupted pause/return stages without repeating a completed lift. If preflight is unavailable, cancellation remains in place and reports a warning; a position mismatch or command failure fails the job. No parking is attempted before any file command has been sent. Heating/probing in progress can delay cancellation.
+- Completion requires the last ACK and the `M400` ACK. State and errors remain visible. The global “Active print” button opens the shared job from any screen; “Last print” in the library shows the previous or interrupted result.
+- Successful cancellation returns to Home after the cooldown and movement barrier, and resets live progress, layer, elapsed and remaining time. The historical cancellation record remains persisted. A failed cancellation keeps its error visible and does not navigate home.
 - The record is saved before the first send, every five seconds, and on pause/resume/cancel/completion. Writes are serialized; the record excludes thumbnails and does not allow resuming from an offset. Failure of the first save prevents the job from starting.
 - Directory: `/storage/emulated/0/Download/gcode_files`. Classic storage permissions through Android 29; all-files access from Android 30. `MainActivity` exposes the SDK level through a MethodChannel to select the permission.
 - Uploads: `POST /uploads` and `POST /api/files/local`, with the `X-Api-Key` header. The key is generated and persisted as `upload_api_key`; view/copy it from Home → API key. Cura no longer uses the dummy password `1234`.
@@ -72,7 +73,7 @@ Avoid adding another serial sender or a second source of print state.
 - Shelf listens on port 8888 at the Wi-Fi IP, or `0.0.0.0` if unavailable. It closes when the root is unmounted. It does not yet provide a control dashboard or video.
 - Orca/Cura metadata, the largest-area Base64 thumbnail, and progress from `M73` or layer comments are supported. Files are read as streams.
 - Presets: `hotend_<material>` / `bed_<material>` keys, PLA/PETG/TPU/ABS materials; PLA bed temperature is 60 °C in both flows.
-- Languages: en/es/ru/fr/de/it/pt, with 110 keys in each JSON. The persisted selection is no longer forced to English at startup.
+- Languages: en/es/ru/fr/de/it/pt, with 111 keys in each JSON. The persisted selection is no longer forced to English at startup.
 
 ## Environment and checks
 
@@ -172,6 +173,17 @@ indices are not millimeter coordinates; Y increases toward the top/rear. Dense
 meshes scroll horizontally. Refresh errors preserve the previous valid mesh;
 refresh and probing stay disabled throughout the whole operation.
 
+The mesh point and summary information now appears beneath the mesh controls.
+Point selection remains informational: editable points and printer motion have
+not yet been implemented. The highlighted active-print button is global, and
+movement controls grow with available width while preserving their commands.
+The parking parser accepts the target firmware's colonless `M211` axis bounds;
+parking still requires all existing safety checks. We have simulated the
+user-supplied report from the installed firmware but have not tested physical motion.
+The later navigation, cancellation, and movement-control changes passed all
+123 tests with simulated transport, static analysis, formatting and translation
+checks, and an Android debug build. Physical printer validation remains pending.
+
 All 115 tests pass with simulated transport. We checked thumbnail frame/provider
 stability, print page updates, parking/return modes and ordering, cancellation,
 disconnection, travel bounds, interrupted history, and the responsive mesh UI.
@@ -184,6 +196,7 @@ sensor: do not move the head or release motors during a pause.
 
 ## Outstanding work
 
+- We reviewed selected-point calibration in [MESH_POINT_CALIBRATION_REVIEW.md](docs/MESH_POINT_CALIBRATION_REVIEW.md). It remains a proposal: the LCD's point editor changes a mesh cell, while M851 changes the global probe offset. A future shared calibration session needs exclusive motion ownership, verified mesh coordinates, bounded 0.01 mm planned adjustments, readback, and explicit saving. The retained firmware report has Z minimum 0; negative targets and stationary babystepping require hardware-specific validation before enabling descent. We did not change production code or send printer commands during this review.
 - We still need to validate with the phone and printer and test uploads from Orca/Cura; so far, our tests have used simulated transport. For parking, first check cold movement above an empty bed, normal/limited Z lifts, a pause longer than two minutes, return order, cancellation, and disconnection. Process death leaves the firmware runtime timeout unchanged; reconnect or restart before another job.
 - Verify and back up your existing signing key and confirm its intended distribution identity. The audited local release already uses a different certificate from the old packaged APK.
 - Remediate the open findings in the security report and repeat the relevant checks before adding remote controls.

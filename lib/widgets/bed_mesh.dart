@@ -15,26 +15,22 @@ String meshHeight(double z) => '${z > 0 ? '+' : ''}${z.toStringAsFixed(3)} mm';
 
 class BedMesh extends StatefulWidget {
   final List<List<double>> grid;
-  const BedMesh({super.key, required this.grid});
+  final math.Point<int>? selected;
+  final ValueChanged<math.Point<int>>? onSelected;
+  const BedMesh(
+      {super.key, required this.grid, this.selected, this.onSelected});
   @override
   State<BedMesh> createState() => _BedMeshState();
 }
 
 class _BedMeshState extends State<BedMesh> {
   bool _surface = false;
-  math.Point<int>? _selected;
   final _scroll = ScrollController();
 
   @override
   void dispose() {
     _scroll.dispose();
     super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(covariant BedMesh oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.grid, widget.grid)) _selected = null;
   }
 
   @override
@@ -108,7 +104,8 @@ class _BedMeshState extends State<BedMesh> {
                                     child: Semantics(
                                       label:
                                           'X$x, Y$y, ${meshHeight(grid[y][x])}',
-                                      selected: _selected == math.Point(x, y),
+                                      selected:
+                                          widget.selected == math.Point(x, y),
                                       button: true,
                                       child: Material(
                                         color: meshColor(grid[y][x], extent),
@@ -116,11 +113,11 @@ class _BedMeshState extends State<BedMesh> {
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                             side: BorderSide(
-                                                width: _selected ==
+                                                width: widget.selected ==
                                                         math.Point(x, y)
                                                     ? 2
                                                     : 1,
-                                                color: _selected ==
+                                                color: widget.selected ==
                                                         math.Point(x, y)
                                                     ? Colors.white
                                                     : Colors.white12)),
@@ -128,8 +125,10 @@ class _BedMeshState extends State<BedMesh> {
                                           key: ValueKey('mesh-$x-$y'),
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          onTap: () => setState(() =>
-                                              _selected = math.Point(x, y)),
+                                          onTap: widget.onSelected == null
+                                              ? null
+                                              : () => widget.onSelected!(
+                                                  math.Point(x, y)),
                                           child: ConstrainedBox(
                                             constraints: const BoxConstraints(
                                                 minHeight: 56),
@@ -167,13 +166,6 @@ class _BedMeshState extends State<BedMesh> {
             Text('Mesh_front'.tr(),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelMedium),
-            const SizedBox(height: 12),
-            Text(
-                _selected == null
-                    ? 'Mesh_select'.tr()
-                    : 'X${_selected!.x} · Y${_selected!.y} · ${meshHeight(grid[_selected!.y][_selected!.x])}',
-                key: const ValueKey('mesh-selection'),
-                textAlign: TextAlign.center),
           ],
           const SizedBox(height: 16),
           Container(
@@ -195,6 +187,33 @@ class _BedMeshState extends State<BedMesh> {
                 const Text('0 mm'),
                 Text(meshHeight(extent))
               ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class BedMeshInfo extends StatelessWidget {
+  final List<List<double>> grid;
+  final math.Point<int>? selected;
+  const BedMeshInfo({super.key, required this.grid, this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final values = grid.expand((row) => row);
+    final low = values.reduce(math.min), high = values.reduce(math.max);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(
+            selected == null
+                ? 'Mesh_select'.tr()
+                : 'X${selected!.x} · Y${selected!.y} · ${meshHeight(grid[selected!.y][selected!.x])}',
+            key: const ValueKey('mesh-selection'),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           ControlWrap(minWidth: 100, maxColumns: 3, children: [
             _MeshStat(label: 'Mesh_min'.tr(), value: meshHeight(low)),

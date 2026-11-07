@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:CacomixtlePad/services/usb_connection_service.dart';
@@ -16,6 +18,7 @@ class _BedLevelPageState extends State<BedLevelPage> {
   String? _error;
   bool _busy = false;
   bool _probing = false;
+  math.Point<int>? _selected;
 
   @override
   void initState() {
@@ -50,9 +53,12 @@ class _BedLevelPageState extends State<BedLevelPage> {
         setState(() => _error = 'BL_failed');
         return;
       }
-      setState(() => _grid = [
-            for (final y in ys) [for (final x in xs) map[GridPoint(x, y)]!]
-          ]);
+      setState(() {
+        _grid = [
+          for (final y in ys) [for (final x in xs) map[GridPoint(x, y)]!]
+        ];
+        _selected = null;
+      });
     } catch (_) {
       if (mounted) setState(() => _error = 'BL_failed');
     } finally {
@@ -86,7 +92,11 @@ class _BedLevelPageState extends State<BedLevelPage> {
                       Text((_error ?? 'Mesh_loading').tr(),
                           textAlign: TextAlign.center),
                     ])))
-            : BedMesh(grid: _grid!),
+            : BedMesh(
+                grid: _grid!,
+                selected: _selected,
+                onSelected: (point) => setState(() => _selected = point),
+              ),
         trailing:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (_busy) ...[
@@ -112,6 +122,10 @@ class _BedLevelPageState extends State<BedLevelPage> {
                 enabled: enabled,
                 onTap: () => _loadGrid(probe: true)),
           ]),
+          if (_grid != null) ...[
+            const SizedBox(height: 12),
+            BedMeshInfo(grid: _grid!, selected: _selected),
+          ],
         ]),
       )),
     );
