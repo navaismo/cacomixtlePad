@@ -16,7 +16,7 @@ I built it as a quick, responsive, and modern replacement for the LCD.
 
 <br>
 
-<details>
+<details open>
 <summary>Earlier phone demo</summary>
 
 This recording shows the earlier interface. You can see the current screens below.
@@ -114,7 +114,7 @@ to capture them. You can reproduce them with the [screenshot tool](docs/SCREENSH
 You can leave this page while printing. When parking finishes, **Resume** becomes
 available; Z offset changes stay disabled throughout pause and return.
 
-<details>
+<details open>
 <summary>Paused print and the global Active print button</summary>
 
 <div align="center">
@@ -137,7 +137,7 @@ available; Z offset changes stay disabled throughout pause and return.
 > - [x] Confirm before disabling motors
 > - [x] Open the bed mesh or start a new leveling pass
 
-<details>
+<details open>
 <summary>Z offset, extrusion, and motor controls</summary>
 
 <div align="center">
@@ -166,7 +166,7 @@ The point labels are mesh indices, not XY distances. Selecting a point currently
 shows its height; moving the nozzle to a point and adjusting it in 0.01 mm steps
 remain [planned calibration work](docs/MESH_POINT_CALIBRATION_REVIEW.md).
 
-<details>
+<details open>
 <summary>3D surface view</summary>
 
 <div align="center">
@@ -189,7 +189,7 @@ remain [planned calibration work](docs/MESH_POINT_CALIBRATION_REVIEW.md).
 > - [x] Save the printer configuration
 > - [x] Read app information
 
-<details>
+<details open>
 <summary>Material presets</summary>
 
 <div align="center">
